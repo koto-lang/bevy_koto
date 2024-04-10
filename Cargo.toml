@@ -1,0 +1,58 @@
+[package]
+name = "bevy_koto"
+version = "0.1.0"
+edition = "2021"
+authors = ["irh <ian.r.hobson@gmail.com>"]
+license = "MIT"
+description = "Koto support for Bevy"
+homepage = "https://koto.dev"
+repository = "https://github.com/koto-lang/bevy_koto"
+keywords = ["scripting", "language", "koto", "bevy"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# Multi-producer multi-consumer channels for message passing
+crossbeam-channel = "0.5"
+# Provides a clone macro
+fb_cloned = "0.1"
+# More compact and efficient implementations of the standard synchronization primitives.
+parking_lot = "0.12"
+# derive(Error)
+thiserror = "1"
+
+koto = { git = "https://github.com/koto-lang/koto" }
+koto_color = { git = "https://github.com/koto-lang/koto" }
+koto_geometry = { git = "https://github.com/koto-lang/koto" }
+koto_random = { git = "https://github.com/koto-lang/koto" }
+
+[dependencies.bevy]
+version = "0.13"
+default-features = false
+features = ["bevy_asset", "bevy_core_pipeline", "bevy_sprite", "bevy_text"]
+
+[dev-dependencies]
+# Flexible concrete Error type built on std::error::Error
+anyhow = "1.0.82"
+# A simple to use, efficient, and full-featured Command Line Argument Parser
+clap = { version = "4.5.4", features = ["derive"] }
+
+[dev-dependencies.bevy]
+version = "0.13"
+default-features = false
+features = [
+  "bevy_asset",
+  "bevy_core_pipeline",
+  "bevy_gilrs",
+  "bevy_render",
+  "bevy_sprite",
+  "bevy_text",
+  "bevy_ui",
+  "bevy_winit",
+  "default_font",
+  "png",
+  "x11",
+  "file_watcher",
+  "multi-threaded",
+  "tonemapping_luts",
+]

@@ -1,0 +1,86 @@
+from number import pi, tau
+from random import bool as random_bool, number as random_number
+
+from utils import palette
+from utils.math import lerp
+
+from color import rgb
+from geometry import vec2
+
+palette = palette.make_palette
+  rgb(0.99, 0.95, 0.31),
+  rgb(0.59, 0.05, 0.91),
+  rgb(0.39, 0.95, 0.31),
+  rgb(0.19, 0.29, 0.99),
+
+background_color = rgb 0.5, 0.8, 0.8
+
+screen_bound = 1.2
+max_rect_count = 50
+speed_max = 0.3
+fade_duration = 2
+scene_rate = 0.125
+scene_count = size palette
+color_variation = 0.8
+alpha_min = 0.2
+alpha_max = 0.9
+
+random_lerp = |min, max| lerp min, max, random_number()
+
+random_color = |time|
+  x = random_lerp 0.24, 0.99
+  scene = (time * scene_rate % scene_count).floor()
+  offset = (random_number() - 0.5) * color_variation
+  palette.get scene + offset
+
+spawn_rect = |time, id|
+  position =
+    vec2 (random_lerp -screen_bound, screen_bound), (random_lerp -screen_bound, screen_bound)
+  velocity =
+    vec2 (random_lerp -speed_max, speed_max), (random_lerp -speed_max, speed_max)
+  shape_size = random_lerp 0.2, 0.6
+  color = ((random_color time) * 2).set_a 0
+  target_alpha = random_lerp alpha_min, alpha_max
+  rotation = if random_bool() then tau / 8 else 0
+
+  shape.square()
+    .set_color color
+    .set_size shape_size
+    .set_position position, id
+    .set_rotation rotation
+    .set_state {position, velocity, color, target_alpha, rotation, id, is_active: true}
+    .on_update |time_delta|
+      rect = self.state()
+      rect.position += rect.velocity * time_delta
+      self.set_position rect.position, rect.id
+      x, y = rect.position
+      if x.abs() > screen_bound or y.abs() > screen_bound
+        rect.target_alpha = 0.0 # Fade the rect out before it gets removed
+      a = rect.color.a()
+      if a < rect.target_alpha
+        rect.color.set_a (a + fade_duration * time_delta).min rect.target_alpha
+      else if a > rect.target_alpha
+        rect.color.set_a (a - fade_duration * time_delta).max rect.target_alpha
+      else if rect.target_alpha == 0
+        rect.is_active = false
+      self.set_color rect.color
+
+export
+  setup: ||
+    rects: []
+    time: 0
+    id: 0
+
+  on_load: |state|
+    state.rects = []
+    set_clear_color background_color
+
+  update: |state, time_delta|
+    state.time += time_delta
+    # Remove rects that have gone out of bounds
+    state.rects.retain |rect| rect.state().is_active
+    # Make new rects to replace ones that have been removed
+    state.rects.resize_with max_rect_count, ||
+      # The ID is used for Z-order, and has a max of 999
+      state.id = if state.id < 999 then state.id + 1 else 0
+      spawn_rect state.time, state.id

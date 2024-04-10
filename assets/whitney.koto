@@ -1,0 +1,57 @@
+from color import hsv
+from geometry import vec2
+from utils.math import lerp
+from utils.palette import make_palette
+
+mod_sin = |x, frequency, min, max|
+  min + (max - min) * (x * frequency).sin()
+
+background_color = hsv 184, 0.5, 0.8
+shape_count = 32
+
+palette = make_palette
+  hsv(30, 0.72, 0.99),
+  hsv(116, 0.21, 0.90),
+  hsv(58, 0.39, 0.99),
+  hsv(0, 0.45, 0.94),
+
+shape_color = |x, time|
+  t = time * 0.6
+  result = palette.fade ((x * t).sin() * 0.5 + 0.5)
+
+shape_size = |x| 
+  lerp 0.3, 0.1, x
+
+shape_position = |x, time|
+  t = time * x * 4
+  r = 0.85 - 0.8 * x
+  vec2 r * t.sin(), r * t.cos()
+
+make_shape = |state, i|
+  x = i / shape_count
+  initial_time = state.time
+  shape.circle()
+    .set_size shape_size x
+    .set_position (shape_position x, initial_time), i
+    .set_color shape_color x, initial_time
+    .on_update |time_delta|
+      time = state.time
+      self
+        .set_position (shape_position x, time), i 
+        .set_color shape_color x, time 
+
+export
+  setup: ||
+    camera_offset: vec2 0
+    time: 0
+
+  on_load: |state|
+    state.time = 0
+    set_clear_color background_color
+    state.shapes = 1..=shape_count
+      .each |i| make_shape state, i
+      .to_tuple()
+
+  update: |state, time_delta|
+    state.time += time_delta
+    set_zoom mod_sin state.time, 0.1, 0.9, 1.1

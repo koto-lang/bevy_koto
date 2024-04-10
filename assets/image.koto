@@ -1,0 +1,28 @@
+from number import tau
+
+export
+  on_load: |data|
+    data.shapes =
+      ( shape.square()
+          .set_position 0.5, 0.5
+          .set_color 1.0, 0.0, 0.0
+          .set_image 'images/sunset.png'
+      , shape.square()
+          .set_position 0.5, -0.5
+          .set_color 0.0, 1.0, 0.0
+          .set_image 'images/sunset.png'
+      , shape.square()
+          .set_position -0.5, -0.5
+          .set_color 0.0, 0.0, 1.0
+          .set_image 'images/sunset.png'
+      , shape.square()
+          .set_position -0.5, 0.5
+          .set_color 1.0, 1.0, 0.0
+          .set_image 'images/sunset.png'
+      , shape.square()
+          .set_position 0, 0, 1
+          .set_size 2.sqrt()
+          .set_rotation tau / 8
+          .set_color 1.0, 1.0, 1.0
+          .set_alpha 0.3
+      )

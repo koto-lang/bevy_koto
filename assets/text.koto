@@ -1,0 +1,6 @@
+export
+  on_load: |state|
+    state.text =
+      make_text("Hello, World!")
+        # TODO - How to scale text in a more useful way?
+        .set_size 0.001

@@ -1,0 +1,1 @@
+export lerp = |min, max, x| min + (max - min) * x
