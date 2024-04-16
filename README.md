@@ -10,7 +10,7 @@ This crate is serves as a proof of concept of integrating Koto with Bevy.
 
 You can see it in action by running the example application: 
 
-`cargo run --release --example demo`
+`cargo run --example demo`
 
 It's still early in development and hasn't been used outside of toy projects,
 use at your own risk!
@@ -23,7 +23,8 @@ discussions, or the [Koto discord][discord].
 - Modular plugins exposing various levels of integration.  
 - Hot-reloading of Koto scripts using Bevy's asset system
 - Mapping between Koto and Bevy entities
-- Plugins for some useful Koto libraries like `color`, `geometry`, and `random`.
+- Plugins for some useful Koto libraries like [`color`][koto_color], 
+  [`geometry`][koto_geometry], and [`random`][koto_random].
 - Proof of concept plugins for scripted animation of 2d shapes.
 
 ## Supported Versions
@@ -34,3 +35,6 @@ discussions, or the [Koto discord][discord].
 [bevy]: https://bevyengine.org
 [discord]: https://discord.gg/JeV8RuK4CT
 [koto]: https://koto.dev
+[koto_color]: https://koto.dev/docs/next/libs/color
+[koto_geometry]: https://koto.dev/docs/next/libs/geometry
+[koto_random]: https://koto.dev/docs/next/libs/random
