@@ -1,9 +1,4 @@
-use bevy::{
-    core_pipeline::{bloom::BloomSettings, tonemapping::Tonemapping},
-    prelude::*,
-    render::camera::ScalingMode,
-    window::WindowResized,
-};
+use bevy::{prelude::*, render::camera::ScalingMode, window::WindowResized};
 use cloned::cloned;
 use koto::prelude::*;
 
@@ -44,7 +39,7 @@ pub struct MainCamera;
 
 fn setup_camera(mut commands: Commands) {
     commands
-        .spawn((Camera2dBundle { ..default() }, BloomSettings::default()))
+        .spawn(Camera2dBundle { ..default() })
         .insert(MainCamera);
 }
 
