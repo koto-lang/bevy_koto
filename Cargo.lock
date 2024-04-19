@@ -2140,7 +2140,8 @@ checksum = "e2db585e1d738fc771bf08a151420d3ed193d9d895a36df7f6f8a9456b911ddc"
 [[package]]
 name = "koto"
 version = "0.14.0"
-source = "git+https://github.com/koto-lang/koto#e2b117fdaa0175e4dff9ac628d11aacb28f39ab5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b6da03fefa38bed3c227eaee618d7fedf429cdc1e8b50343f044f34c6b767861"
 dependencies = [
  "dunce",
  "koto_bytecode",
@@ -2152,7 +2153,8 @@ dependencies = [
 [[package]]
 name = "koto_bytecode"
 version = "0.14.0"
-source = "git+https://github.com/koto-lang/koto#e2b117fdaa0175e4dff9ac628d11aacb28f39ab5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c894750fb22524013f6483f186bf35c4724d0940a803724211c7f91b4ea2f3a4"
 dependencies = [
  "dunce",
  "koto_memory",
@@ -2165,7 +2167,8 @@ dependencies = [
 [[package]]
 name = "koto_color"
 version = "0.14.0"
-source = "git+https://github.com/koto-lang/koto#e2b117fdaa0175e4dff9ac628d11aacb28f39ab5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ced7ca17771dfbc294f61fe1f7c3064154696f046f83867f3f447a6211ef4606"
 dependencies = [
  "koto_runtime",
  "palette 0.7.5",
@@ -2174,7 +2177,8 @@ dependencies = [
 [[package]]
 name = "koto_derive"
 version = "0.14.0"
-source = "git+https://github.com/koto-lang/koto#e2b117fdaa0175e4dff9ac628d11aacb28f39ab5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "01f2c74e956af281987b6f0605c5837fa2c304da10b860b1486c435d3259f59d"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2184,7 +2188,8 @@ dependencies = [
 [[package]]
 name = "koto_geometry"
 version = "0.14.0"
-source = "git+https://github.com/koto-lang/koto#e2b117fdaa0175e4dff9ac628d11aacb28f39ab5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bd609f7a1a63b5c856dec2332bea99a92a11fd57b682fb7da148395380b37fe2"
 dependencies = [
  "koto_runtime",
  "nannou_core",
@@ -2193,7 +2198,8 @@ dependencies = [
 [[package]]
 name = "koto_lexer"
 version = "0.14.0"
-source = "git+https://github.com/koto-lang/koto#e2b117fdaa0175e4dff9ac628d11aacb28f39ab5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5c655b4048dc8a8833e3e7c7948748ca78ee8c402be0e2354b29aec3afc726e0"
 dependencies = [
  "unicode-segmentation",
  "unicode-width",
@@ -2203,7 +2209,8 @@ dependencies = [
 [[package]]
 name = "koto_memory"
 version = "0.14.0"
-source = "git+https://github.com/koto-lang/koto#e2b117fdaa0175e4dff9ac628d11aacb28f39ab5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a8b9acab6ac40332c6b4769ec847e31a0b728f3995522dc7d989fdaf0de83496"
 dependencies = [
  "parking_lot",
 ]
@@ -2211,7 +2218,8 @@ dependencies = [
 [[package]]
 name = "koto_parser"
 version = "0.14.0"
-source = "git+https://github.com/koto-lang/koto#e2b117fdaa0175e4dff9ac628d11aacb28f39ab5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9a4a5ed907ce6467c9cd72dca2b8e42561ff59ee62c040a739e534a111ad83a0"
 dependencies = [
  "koto_lexer",
  "koto_memory",
@@ -2222,7 +2230,8 @@ dependencies = [
 [[package]]
 name = "koto_random"
 version = "0.14.0"
-source = "git+https://github.com/koto-lang/koto#e2b117fdaa0175e4dff9ac628d11aacb28f39ab5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c8f70da3ce5ee8baeaae6fdc13d5240fe6887e55980c8b3616b17e3f84d5af7c"
 dependencies = [
  "getrandom",
  "koto_derive",
@@ -2235,7 +2244,8 @@ dependencies = [
 [[package]]
 name = "koto_runtime"
 version = "0.14.0"
-source = "git+https://github.com/koto-lang/koto#e2b117fdaa0175e4dff9ac628d11aacb28f39ab5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eb958e65b5b5565f68f45ee056f75acd4ceabae2d0ff23358ef7b90c553e73e9"
 dependencies = [
  "chrono",
  "downcast-rs",
