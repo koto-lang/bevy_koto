@@ -23,7 +23,7 @@ struct Args {
     assets_dir: PathBuf,
 
     /// The name of the script to run from the assets dir
-    #[arg(value_name = "SCRIPT_NAME", default_value = "scrolling_rects")]
+    #[arg(value_name = "SCRIPT_NAME", default_value = "scrolling_squares")]
     script: String,
 }
 
