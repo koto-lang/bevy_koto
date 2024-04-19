@@ -5,6 +5,9 @@ use crate::{
 use bevy::prelude::*;
 pub use koto_geometry::Vec2 as KotoVec2;
 
+/// 2d Geometry utilities for Koto
+///
+/// The plugin adds the `geometry` module from `koto_geometry` to Koto's prelude.
 pub struct KotoGeometryPlugin;
 
 impl Plugin for KotoGeometryPlugin {

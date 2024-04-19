@@ -17,6 +17,12 @@ use bevy::{prelude::*, render::view::RenderLayers, sprite::MaterialMesh2dBundle}
 use cloned::cloned;
 use koto::{derive::*, prelude::*, runtime::Result as KotoResult};
 
+/// Basic 2d shapes for bevy_koto
+///
+/// The plugin adds a `shape` module to the Koto prelude.
+/// The currently available shapes are `circle`, `square`, and `polygon`.
+///
+/// Shapes get spawned as a [MaterialMesh2dBundle] with a [ColorMaterial].
 pub struct KotoShapePlugin;
 
 impl Plugin for KotoShapePlugin {

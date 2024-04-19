@@ -7,6 +7,7 @@ use crate::runtime::{
     KotoUpdate, ScriptLoaded,
 };
 
+/// Spawns a 2d camera and exposes a `set_zoom` function to Koto
 pub struct KotoCameraPlugin;
 
 impl Plugin for KotoCameraPlugin {

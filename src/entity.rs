@@ -8,6 +8,10 @@ use koto::prelude::*;
 use parking_lot::RwLock;
 use std::sync::Arc;
 
+/// Support for connecting Koto and Bevy entities
+///
+/// Entities with the [KotoEntity] component will be automatically despawned when the script no
+/// longer refers to them.
 pub struct KotoEntityPlugin;
 
 impl Plugin for KotoEntityPlugin {

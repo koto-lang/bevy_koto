@@ -17,6 +17,10 @@ use bevy::prelude::*;
 use cloned::cloned;
 use koto::{derive::*, prelude::*, runtime::Result as KotoResult};
 
+/// Text support for bevy_koto
+///
+/// This plugin is currently underbaked (appropriate font sizing needs to be figured out),
+/// but it's a start.
 pub struct KotoTextPlugin;
 
 impl Plugin for KotoTextPlugin {

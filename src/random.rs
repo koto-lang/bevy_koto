@@ -1,6 +1,9 @@
 use crate::runtime::{KotoRuntime, KotoRuntimePlugin};
 use bevy::prelude::*;
 
+/// Random number utilities for Koto
+///
+/// The plugin adds the `random` module from `koto_random` to Koto's prelude.
 pub struct KotoRandomPlugin;
 
 impl Plugin for KotoRandomPlugin {

@@ -5,6 +5,10 @@ use bevy::{
 
 use crate::runtime::{KotoRuntime, KotoRuntimePlugin, KotoSchedule, KotoUpdate, ScriptCompiled};
 
+/// Window events for bevy_koto
+///
+/// The plugin currently only detects window resize events, and then calls the script's
+/// exported `on_window_size` function (if it exists).
 pub struct KotoWindowPlugin;
 
 impl Plugin for KotoWindowPlugin {

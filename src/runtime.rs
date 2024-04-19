@@ -40,6 +40,17 @@ pub enum KotoUpdate {
     PostUpdate,
 }
 
+/// Manages a Koto runtime for Bevy
+///
+/// The [KotoSchedule] schedule is set up by the plugin, with the [KotoUpdate] system sets.
+///
+/// The active script is defined in the [KotoScriptAssets] asset,
+/// and is loaded via a [KotoScriptFolder] resource, which is currently set up by the application.
+///
+/// The following events are also added by the plugin:
+/// - [ReloadScript]: if this is triggered then the script will be reloaded.
+/// - [ScriptLoaded]: this is triggered when the script has been reloaded.
+/// - [ScriptCompiled]: this is triggered when the script has been successfully compiled and run.
 pub struct KotoRuntimePlugin;
 
 impl Plugin for KotoRuntimePlugin {
@@ -163,6 +174,7 @@ fn compile_script(
     }
 }
 
+/// Triggering this event will cause the active script to be reloaded
 #[derive(Event, Default)]
 pub struct ReloadScript {
     call_setup: bool,
@@ -198,7 +210,7 @@ fn add_script_dependencies(
     }
 }
 
-// The folder that the Koto scripts are contained in
+/// The folder that the Koto scripts are contained in
 #[derive(Debug, Resource)]
 pub struct KotoScriptFolder {
     path: PathBuf,
@@ -207,6 +219,7 @@ pub struct KotoScriptFolder {
 }
 
 impl KotoScriptFolder {
+    /// Initializes a script folder with the given path, and optionally selects an initial script
     pub fn new(path: &Path, initial_script: Option<&str>) -> Self {
         let koto_ext = OsStr::new("koto");
         let mut script_paths: Vec<PathBuf> = fs::read_dir(path)
@@ -244,6 +257,7 @@ impl KotoScriptFolder {
         }
     }
 
+    /// Gets the current script's name
     pub fn current_script_name(&self) -> String {
         self.script_paths[self.current_script]
             .file_name()
@@ -253,6 +267,10 @@ impl KotoScriptFolder {
             .into()
     }
 
+    /// Loads the next script in the folder
+    ///
+    /// If the last script in the folder is active, then the function cycles around to the first
+    /// script in the folder.
     pub fn next_script(&mut self) {
         if self.current_script == self.script_paths.len() - 1 {
             self.current_script = 0;
@@ -261,6 +279,10 @@ impl KotoScriptFolder {
         }
     }
 
+    /// Loads the previous script in the folder
+    ///
+    /// If the first script in the folder is active, then the function cycles around to the last
+    /// script in the folder.
     pub fn previous_script(&mut self) {
         if self.current_script == 0 {
             self.current_script = self.script_paths.len() - 1;

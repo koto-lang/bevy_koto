@@ -10,6 +10,10 @@ use cloned::cloned;
 use koto::prelude::*;
 pub use koto_color::Color as KotoColor;
 
+/// Color support for bevy_koto
+///
+/// The plugin adds the `color` module from `koto_color` to Koto's prelude,
+/// along with a `set_clear_color` function.
 pub struct KotoColorPlugin;
 
 impl Plugin for KotoColorPlugin {

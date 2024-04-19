@@ -1,3 +1,9 @@
+//! # bevy_koto
+//!
+//! Plugins for Bevy that add support for scripting with Koto.
+
+#![warn(missing_docs)]
+
 mod camera;
 mod color;
 mod entity;
