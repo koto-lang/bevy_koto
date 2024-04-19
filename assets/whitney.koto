@@ -1,6 +1,10 @@
+# Rotating circles, inspired by the work of John Whitney
+#
+# https://en.wikipedia.org/wiki/John_Whitney_(animator)
+
 from color import hsv
 from geometry import vec2
-from number import pi
+from number import pi_4
 from utils.math import lerp
 from utils.palette import make_palette
 
@@ -38,7 +42,7 @@ make_shape = |state, i|
     .set_size shape_size x
     .set_position (shape_position x, initial_time), i
     .set_color shape_color x, initial_time
-    .set_rotation pi / 4
+    .set_rotation pi_4
     .on_update |time_delta|
       time = state.time
       self

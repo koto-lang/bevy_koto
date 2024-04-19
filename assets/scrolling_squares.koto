@@ -1,11 +1,13 @@
-from number import pi, tau
+# Lots of scrolling squares
+# This serves as a test of dynamically spawing and despawning entities.
+
+from color import rgb, hsv
+from geometry import vec2
+from number import pi_4
 from random import bool as random_bool, number as random_number
 
 from utils import palette
 from utils.math import lerp
-
-from color import rgb, hsv
-from geometry import vec2
 
 palette = palette.make_palette
   (rgb 0.99, 0.95, 0.31),
@@ -43,7 +45,7 @@ spawn_rect = |time, id|
   shape_size = random_lerp 0.2, 0.6
   color = ((random_color time) * 2).set_a 0
   target_alpha = random_lerp alpha_min, alpha_max
-  rotation = if random_bool() then tau / 8 else 0
+  rotation = if random_bool() then pi_4 else 0
 
   shape.square()
     .set_color color
@@ -52,20 +54,20 @@ spawn_rect = |time, id|
     .set_rotation rotation
     .set_state {position, velocity, color, target_alpha, rotation, id, is_active: true}
     .on_update |time_delta|
-      state = self.state()
-      state.position += state.velocity * time_delta
-      self.set_position state.position, state.id
-      x, y = state.position
+      this = self.state()
+      this.position += this.velocity * time_delta
+      self.set_position this.position, this.id
+      x, y = this.position
       if x.abs() > screen_bound or y.abs() > screen_bound
-        state.target_alpha = 0.0 # Fade the shape out before it gets removed
-      a = state.color.a()
-      if a < state.target_alpha
-        state.color.set_a (a + fade_duration * time_delta).min state.target_alpha
-      else if a > state.target_alpha
-        state.color.set_a (a - fade_duration * time_delta).max state.target_alpha
-      else if state.target_alpha == 0
-        state.is_active = false
-      self.set_color state.color
+        this.target_alpha = 0.0 # Fade the shape out before it gets removed
+      a = this.color.a()
+      if a < this.target_alpha
+        this.color.set_a (a + fade_duration * time_delta).min this.target_alpha
+      else if a > this.target_alpha
+        this.color.set_a (a - fade_duration * time_delta).max this.target_alpha
+      else if this.target_alpha == 0
+        this.is_active = false
+      self.set_color this.color
 
 export
   setup: ||

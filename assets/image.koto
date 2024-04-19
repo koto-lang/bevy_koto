@@ -1,4 +1,6 @@
-from number import tau
+# A simple test of window alignment and image loading
+
+from number import pi_4
 
 export
   on_load: |data|
@@ -22,7 +24,7 @@ export
       , shape.square()
           .set_position 0, 0, 1
           .set_size 2.sqrt()
-          .set_rotation tau / 8
+          .set_rotation pi_4
           .set_color 1.0, 1.0, 1.0
           .set_alpha 0.3
       )
