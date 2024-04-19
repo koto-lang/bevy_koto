@@ -12,6 +12,8 @@ You can see it in action by running the example application:
 
 `cargo run --example demo`
 
+[![Playing around with the bevy_koto demo](https://img.youtube.com/vi/EqgAEOucBP8/0.jpg)](https://www.youtube.com/watch?v=EqgAEOucBP8)
+
 It's still early in development and hasn't been used outside of toy projects,
 use at your own risk!
 
