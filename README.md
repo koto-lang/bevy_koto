@@ -8,10 +8,11 @@
 
 This crate is serves as a proof of concept of integrating Koto with Bevy. 
 
-You can see it in action by running the example application: 
+You can see it in action by running the demo application: 
 
 `cargo run --example demo`
 
+Youtube video of the demo in action:
 [![Playing around with the bevy_koto demo](https://img.youtube.com/vi/EqgAEOucBP8/0.jpg)](https://www.youtube.com/watch?v=EqgAEOucBP8)
 
 It's still early in development and hasn't been used outside of toy projects,
