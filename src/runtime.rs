@@ -4,7 +4,6 @@ use bevy::{
     ecs::schedule::ScheduleLabel,
     prelude::*,
     reflect::TypePath,
-    utils::BoxedFuture,
 };
 use cloned::cloned;
 use koto::prelude::*;
@@ -67,7 +66,7 @@ impl Plugin for KotoRuntimePlugin {
                     .chain(),
             );
 
-            let mut order = app.world.resource_mut::<MainScheduleOrder>();
+            let mut order = app.world_mut().resource_mut::<MainScheduleOrder>();
             order.insert_after(PreUpdate, KotoSchedule);
         }
 
@@ -319,18 +318,16 @@ impl AssetLoader for KotoScriptAssetLoader {
     type Settings = ();
     type Error = KotoScriptAssetLoaderError;
 
-    fn load<'a>(
+    async fn load<'a>(
         &'a self,
-        reader: &'a mut Reader,
+        reader: &'a mut Reader<'_>,
         _settings: &'a (),
-        _load_context: &'a mut LoadContext,
-    ) -> BoxedFuture<'a, Result<Self::Asset, Self::Error>> {
-        Box::pin(async move {
-            let mut bytes = Vec::new();
-            reader.read_to_end(&mut bytes).await?;
-            let script = str::from_utf8(&bytes)?;
-            Ok(KotoScript(script.into()))
-        })
+        _load_context: &'a mut LoadContext<'_>,
+    ) -> Result<Self::Asset, Self::Error> {
+        let mut bytes = Vec::new();
+        reader.read_to_end(&mut bytes).await?;
+        let script = str::from_utf8(&bytes)?;
+        Ok(KotoScript(script.into()))
     }
 
     fn extensions(&self) -> &[&str] {

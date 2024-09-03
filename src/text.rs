@@ -148,10 +148,10 @@ impl KotoText {
 
         let color = match ctx.args {
             [Number(n1), Number(n2), Number(n3)] => {
-                Color::rgba(f32::from(n1), f32::from(n2), f32::from(n3), 1.0)
+                Color::srgba(f32::from(n1), f32::from(n2), f32::from(n3), 1.0)
             }
             [Number(n1), Number(n2), Number(n3), Number(n4)] => {
-                Color::rgba(f32::from(n1), f32::from(n2), f32::from(n3), f32::from(n4))
+                Color::srgba(f32::from(n1), f32::from(n2), f32::from(n3), f32::from(n4))
             }
             [Object(o)] if o.is_a::<KotoColor>() => koto_to_bevy_color(*o.cast::<KotoColor>()?),
             _ => {

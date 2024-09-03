@@ -51,10 +51,10 @@ fn on_startup(koto: Res<KotoRuntime>, set_clear_color: Res<SetClearColorSender>)
 
             let color = match ctx.args() {
                 [Number(n1), Number(n2), Number(n3)] => {
-                    Color::rgba(f32::from(n1), f32::from(n2), f32::from(n3), 1.0)
+                    Color::srgba(f32::from(n1), f32::from(n2), f32::from(n3), 1.0)
                 }
                 [Number(n1), Number(n2), Number(n3), Number(n4)] => {
-                    Color::rgba(f32::from(n1), f32::from(n2), f32::from(n3), f32::from(n4))
+                    Color::srgba(f32::from(n1), f32::from(n2), f32::from(n3), f32::from(n4))
                 }
                 [Object(o)] if o.is_a::<KotoColor>() => koto_to_bevy_color(*o.cast::<KotoColor>()?),
                 unexpected => {
@@ -93,7 +93,7 @@ type SetClearColorReceiver = KotoReceiver<SetClearColor>;
 
 pub fn koto_to_bevy_color(c: KotoColor) -> Color {
     let c = c.inner();
-    Color::rgba(c.red, c.green, c.blue, c.alpha)
+    Color::srgba(c.red, c.green, c.blue, c.alpha)
 }
 
 fn koto_to_bevy_color_material_events(
@@ -108,7 +108,7 @@ fn koto_to_bevy_color_material_events(
         match event.event {
             UpdateColorMaterial::Color(color) => material.color = color,
             UpdateColorMaterial::Alpha(alpha) => {
-                material.color.set_a(alpha);
+                material.color.set_alpha(alpha);
             }
             UpdateColorMaterial::SetImagePath(image_path) => {
                 material.texture = image_path.map(|path| asset_server.load(path));

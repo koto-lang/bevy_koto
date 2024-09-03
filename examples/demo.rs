@@ -1,8 +1,5 @@
 use anyhow::{Context, Result};
-use bevy::{
-    diagnostic::FrameTimeDiagnosticsPlugin, ecs::schedule::ExecutorKind, prelude::*,
-    window::close_on_esc,
-};
+use bevy::{diagnostic::FrameTimeDiagnosticsPlugin, ecs::schedule::ExecutorKind, prelude::*};
 use bevy_koto::*;
 use clap::Parser;
 use std::path::PathBuf;
@@ -31,9 +28,10 @@ fn main() -> Result<()> {
     let args = Args::parse();
 
     println!(
-        "Welcome to the bevy_koto demo!
-  - Tab: load the next script
-  - Esc: exit the application
+        "
+>> Welcome to the bevy_koto demo <<
+
+Press tab to load the next script.
 "
     );
 
@@ -76,7 +74,7 @@ fn main() -> Result<()> {
             KotoShapePlugin,
             KotoTextPlugin,
         ))
-        .add_systems(Update, (close_on_esc, load_script))
+        .add_systems(Update, load_script)
         .run();
 
     Ok(())
