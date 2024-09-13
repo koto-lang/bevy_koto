@@ -19,7 +19,7 @@ pub use color::KotoColorPlugin;
 pub use entity::KotoEntityPlugin;
 pub use geometry::KotoGeometryPlugin;
 pub use random::KotoRandomPlugin;
-pub use runtime::{KotoRuntimePlugin, KotoScriptFolder, ReloadScript};
+pub use runtime::{KotoRuntimePlugin, KotoScript, LoadScript};
 pub use shape::KotoShapePlugin;
 pub use text::KotoTextPlugin;
 pub use window::KotoWindowPlugin;

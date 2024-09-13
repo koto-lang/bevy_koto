@@ -29,7 +29,13 @@ koto_random = "0.14"
 [dependencies.bevy]
 version = "0.14"
 default-features = false
-features = ["bevy_asset", "bevy_core_pipeline", "bevy_sprite", "bevy_text"]
+features = [
+  "bevy_asset",
+  "bevy_core_pipeline",
+  "bevy_sprite",
+  "bevy_state",
+  "bevy_text",
+]
 
 [dev-dependencies]
 # Flexible concrete Error type built on std::error::Error

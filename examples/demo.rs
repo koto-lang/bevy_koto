@@ -1,8 +1,14 @@
-use anyhow::{Context, Result};
-use bevy::{diagnostic::FrameTimeDiagnosticsPlugin, ecs::schedule::ExecutorKind, prelude::*};
+use std::path::Path;
+
+use anyhow::Result;
+use bevy::{
+    asset::{io::file::FileAssetReader, LoadedFolder},
+    diagnostic::FrameTimeDiagnosticsPlugin,
+    ecs::schedule::ExecutorKind,
+    prelude::*,
+};
 use bevy_koto::*;
 use clap::Parser;
-use std::path::PathBuf;
 
 #[derive(Parser)]
 #[command(version)]
@@ -15,11 +21,7 @@ struct Args {
     #[arg(short = 'H', long, default_value_t = 600)]
     height: u32,
 
-    /// The path of the assets dir
-    #[arg(short, long, value_name = "DIR", default_value = "assets")]
-    assets_dir: PathBuf,
-
-    /// The name of the script to run from the assets dir
+    /// The name of the script to run on launch
     #[arg(value_name = "SCRIPT_NAME", default_value = "scrolling_squares")]
     script: String,
 }
@@ -32,19 +34,15 @@ fn main() -> Result<()> {
 >> Welcome to the bevy_koto demo <<
 
 Press tab to load the next script.
+Press R to reload the current script.
 "
     );
-
-    let assets_dir = args
-        .assets_dir
-        .canonicalize()
-        .context("failed to canonicalize assets dir")?;
 
     App::new()
         .edit_schedule(Main, |schedule| {
             schedule.set_executor_kind(ExecutorKind::MultiThreaded);
         })
-        .insert_resource(KotoScriptFolder::new(&assets_dir, Some(&args.script)))
+        // .insert_resource(KotoScriptFolder::new(&assets_dir, Some(&args.script)))
         .add_plugins((
             DefaultPlugins
                 .set(WindowPlugin {
@@ -56,8 +54,6 @@ Press tab to load the next script.
                     ..Default::default()
                 })
                 .set(AssetPlugin {
-                    file_path: assets_dir.to_string_lossy().into(),
-                    // Enable file watching in release builds
                     watch_for_changes_override: Some(true),
                     ..Default::default()
                 }),
@@ -74,27 +70,139 @@ Press tab to load the next script.
             KotoShapePlugin,
             KotoTextPlugin,
         ))
-        .add_systems(Update, load_script)
+        .init_state::<AppState>()
+        .add_systems(OnEnter(AppState::Setup), load_script_folder)
+        .add_systems(
+            Update,
+            check_script_events.run_if(in_state(AppState::Setup)),
+        )
+        .add_systems(OnEnter(AppState::Ready), setup)
+        .add_systems(Update, process_keypresses.run_if(in_state(AppState::Ready)))
         .run();
 
     Ok(())
 }
 
-fn load_script(
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, States)]
+enum AppState {
+    #[default]
+    Setup,
+    Ready,
+}
+
+fn load_script_folder(asset_server: Res<AssetServer>, mut commands: Commands) {
+    commands.insert_resource(ScriptLoader {
+        script_folder: asset_server.load_folder("scripts"),
+        ..default()
+    });
+}
+
+fn check_script_events(
+    mut next_state: ResMut<NextState<AppState>>,
+    script_loader: Res<ScriptLoader>,
+    mut events: EventReader<AssetEvent<LoadedFolder>>,
+) {
+    for event in events.read() {
+        if event.is_loaded_with_dependencies(&script_loader.script_folder) {
+            next_state.set(AppState::Ready);
+        }
+    }
+}
+
+fn setup(
+    loaded_folders: Res<Assets<LoadedFolder>>,
+    mut script_loader: ResMut<ScriptLoader>,
+    mut scripts: ResMut<Assets<KotoScript>>,
+    mut load_script: EventWriter<LoadScript>,
+) {
+    let script_folder = loaded_folders
+        .get(&script_loader.script_folder)
+        .expect("Missing script folder");
+
+    for handle in script_folder.handles.iter() {
+        if let Ok(script_id) = handle.id().try_typed::<KotoScript>() {
+            let Some(script) = scripts.get(script_id) else {
+                error!("Script missing (id: {script_id})");
+                continue;
+            };
+
+            // We only want to make top-level scripts available for loading
+            let mut ancestors = script.path.ancestors();
+            ancestors.next();
+            if ancestors.next() == Some(Path::new("scripts"))
+                && ancestors.next() == Some(Path::new(""))
+            {
+                info!("Loaded script: {}", script.path.to_string_lossy());
+
+                let Some(script_handle) = scripts.get_strong_handle(script_id) else {
+                    error!("Failed to get strong handle (id: {script_id})");
+                    continue;
+                };
+
+                script_loader.scripts.push(script_handle);
+            }
+        }
+    }
+
+    script_loader
+        .scripts
+        .sort_by_key(|id| &scripts.get(id).unwrap().path);
+
+    script_loader.next_script(&mut load_script);
+}
+
+fn process_keypresses(
     input: Res<ButtonInput<KeyCode>>,
-    mut scripts: ResMut<KotoScriptFolder>,
-    mut reload_script: EventWriter<ReloadScript>,
+    mut load_script_events: EventWriter<LoadScript>,
+    mut script_loader: ResMut<ScriptLoader>,
 ) {
     if input.just_pressed(KeyCode::Tab) {
         if input.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight]) {
-            info!("Selecting previous script");
-            scripts.previous_script();
+            script_loader.previous_script(&mut load_script_events);
         } else {
-            info!("Selecting next script");
-            scripts.next_script();
+            script_loader.next_script(&mut load_script_events);
         }
     } else if input.just_pressed(KeyCode::KeyR) {
-        info!("Reloading script");
-        reload_script.send_default();
+        script_loader.reload_script(&mut load_script_events);
+    }
+}
+
+#[derive(Resource, Default)]
+struct ScriptLoader {
+    script_folder: Handle<LoadedFolder>,
+    scripts: Vec<Handle<KotoScript>>,
+    current_script: Option<usize>,
+}
+
+impl ScriptLoader {
+    fn next_script(&mut self, load_script_events: &mut EventWriter<LoadScript>) {
+        let next_index = self
+            .current_script
+            .map_or(0, |index| (index + 1) % self.scripts.len());
+        self.load_script(next_index, load_script_events);
+    }
+
+    fn previous_script(&mut self, load_script_events: &mut EventWriter<LoadScript>) {
+        let previous_index = self.current_script.map_or(0, |index| {
+            if index > 0 {
+                index - 1
+            } else {
+                self.scripts.len().saturating_sub(1)
+            }
+        });
+        self.load_script(previous_index, load_script_events);
+    }
+
+    fn reload_script(&mut self, load_script_events: &mut EventWriter<LoadScript>) {
+        if let Some(index) = self.current_script {
+            self.load_script(index, load_script_events);
+        }
+    }
+
+    fn load_script(&mut self, index: usize, load_script_events: &mut EventWriter<LoadScript>) {
+        if let Some(script) = self.scripts.get(index) {
+            load_script_events.send(LoadScript::load(script.clone()));
+            self.current_script = Some(index);
+        }
     }
 }

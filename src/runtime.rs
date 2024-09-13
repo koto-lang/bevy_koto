@@ -1,19 +1,16 @@
 use bevy::{
     app::MainScheduleOrder,
-    asset::{io::Reader, AssetLoader, AsyncReadExt, LoadContext},
+    asset::{
+        io::{file::FileAssetReader, Reader},
+        AssetLoader, AsyncReadExt, LoadContext,
+    },
     ecs::schedule::ScheduleLabel,
     prelude::*,
     reflect::TypePath,
 };
 use cloned::cloned;
 use koto::prelude::*;
-use std::{
-    ffi::{OsStr, OsString},
-    fs,
-    path::{Path, PathBuf},
-    str,
-    time::Duration,
-};
+use std::{path::PathBuf, str, time::Duration};
 
 #[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct KotoSchedule;
@@ -43,7 +40,7 @@ pub enum KotoUpdate {
 ///
 /// The [KotoSchedule] schedule is set up by the plugin, with the [KotoUpdate] system sets.
 ///
-/// The active script is defined in the [KotoScriptAssets] asset,
+/// The active script is defined in the [ActiveScript] asset,
 /// and is loaded via a [KotoScriptFolder] resource, which is currently set up by the application.
 ///
 /// The following events are also added by the plugin:
@@ -73,11 +70,16 @@ impl Plugin for KotoRuntimePlugin {
         let (add_dependency_sender, add_dependency_receiver) = make_channel::<AddDependency>();
         let koto_runtime = KotoRuntime::new(add_dependency_sender.clone());
 
+        // Hack to get the root path of the assets folder,
+        // see https://github.com/bevyengine/bevy/issues/10455
+        let assets_folder_path = FileAssetReader::get_base_path().join("assets");
+
         app.insert_resource(koto_runtime)
             .insert_resource(add_dependency_sender)
             .insert_resource(add_dependency_receiver)
-            .insert_resource(KotoScriptAssets::default())
-            .add_event::<ReloadScript>()
+            .insert_resource(ActiveScript::default())
+            .insert_resource(AssetsFolderPath(assets_folder_path))
+            .add_event::<LoadScript>()
             .add_event::<ScriptLoaded>()
             .add_event::<ScriptCompiled>()
             .init_asset::<KotoScript>()
@@ -85,14 +87,8 @@ impl Plugin for KotoRuntimePlugin {
             .add_systems(
                 KotoSchedule,
                 (
-                    // Koto update stages
-                    (
-                        // Request the current script from the asset server
-                        load_script,
-                        // Compile the script if necessary
-                        compile_script,
-                    )
-                        .in_set(KotoUpdate::Compile),
+                    // Compile the script if necessary
+                    process_load_script_events.in_set(KotoUpdate::Compile),
                     // Run the script's update function
                     run_script_update.in_set(KotoUpdate::Update),
                     // Post update tasks
@@ -106,79 +102,91 @@ impl Plugin for KotoRuntimePlugin {
     }
 }
 
-fn load_script(
-    script_folder: Res<KotoScriptFolder>,
-    asset_server: Res<AssetServer>,
-    mut script_assets: ResMut<KotoScriptAssets>,
-) {
-    if script_folder.is_changed() {
-        let script_name = script_folder.current_script_name();
-        script_assets.script = asset_server.load(script_name);
-        script_assets.dependencies.clear();
-    }
-}
-
 fn process_script_asset_events(
-    script_assets: Res<KotoScriptAssets>,
+    active_script: Res<ActiveScript>,
     mut asset_events: EventReader<AssetEvent<KotoScript>>,
-    mut reload_script_events: EventWriter<ReloadScript>,
+    mut load_script: EventWriter<LoadScript>,
 ) {
-    for event in asset_events.read() {
-        match event {
-            AssetEvent::Added { id } if *id == script_assets.script.id() => {
-                reload_script_events.send(ReloadScript { call_setup: true });
+    if let Some(script) = &active_script.script {
+        for event in asset_events.read() {
+            let id = match event {
+                AssetEvent::Added { id } => *id,
+                AssetEvent::Modified { id } => *id,
+                _ => continue,
+            };
+
+            if id == script.id()
+                || active_script
+                    .dependencies
+                    .iter()
+                    .any(|handle| id == handle.id())
+            {
+                load_script.send(LoadScript::reload(script.clone()));
             }
-            AssetEvent::Modified { .. } => {
-                reload_script_events.send(ReloadScript { call_setup: false });
-            }
-            _ => continue,
         }
     }
 }
 
-fn compile_script(
-    script_folder: Res<KotoScriptFolder>,
-    script_assets: Res<KotoScriptAssets>,
+fn process_load_script_events(
+    assets_folder: Res<AssetsFolderPath>,
     assets: Res<Assets<KotoScript>>,
-    mut reload_script_events: EventReader<ReloadScript>,
+    mut load_script_events: EventReader<LoadScript>,
     mut script_loaded: EventWriter<ScriptLoaded>,
     mut script_compiled: EventWriter<ScriptCompiled>,
     mut koto: ResMut<KotoRuntime>,
+    mut active_script: ResMut<ActiveScript>,
 ) {
-    let mut load_script = false;
-    let mut call_setup = false;
+    for event in load_script_events.read() {
+        let Some(script) = assets.get(event.script.id()) else {
+            error!("Unable to load script (id: {})", event.script.id());
+            continue;
+        };
 
-    for event in reload_script_events.read() {
-        load_script = true;
-        call_setup |= event.call_setup;
-    }
+        info!("Loading {}", script.path.to_string_lossy());
 
-    if load_script {
-        let script = assets.get(&script_assets.script).unwrap();
-        let script_path_in_assets_folder = script_folder
-            .path
-            .join(script_assets.script.path().unwrap().path());
-
-        if call_setup {
+        if event.call_setup {
             debug!("Sending ScriptLoaded event");
             script_loaded.send_default();
         }
 
+        let script_path = assets_folder.0.join(&script.path);
         if koto
-            .compile_script(&script.0, script_path_in_assets_folder, call_setup)
+            .compile_script(&script.script, Some(script_path), event.call_setup)
             .is_ok()
         {
             script_compiled.send_default();
+            active_script.script = Some(event.script.clone());
+            active_script.dependencies.clear();
         }
     }
 }
 
-/// Triggering this event will cause the active script to be reloaded
+/// Sending this event will load the provided script into the runtime
 #[derive(Event, Default)]
-pub struct ReloadScript {
-    call_setup: bool,
+pub struct LoadScript {
+    script: Handle<KotoScript>,
+    call_setup: bool, // false for a hot-reload
 }
 
+impl LoadScript {
+    /// Creates a LoadScript event for the given script handle
+    pub fn load(script: Handle<KotoScript>) -> Self {
+        Self {
+            script,
+            call_setup: true,
+        }
+    }
+
+    /// Creates a LoadScript event for the given handle that skips the script's setup function
+    pub fn reload(script: Handle<KotoScript>) -> Self {
+        Self {
+            script,
+            call_setup: false,
+        }
+    }
+}
+
+// TODO - do we need both loaded and compiled events?
 #[derive(Event, Default)]
 pub struct ScriptLoaded;
 
@@ -192,115 +200,45 @@ fn run_script_update(mut koto: ResMut<KotoRuntime>, time: Res<Time>) {
 }
 
 fn add_script_dependencies(
+    assets_folder_path: Res<AssetsFolderPath>,
     asset_server: Res<AssetServer>,
-    script_folder: Res<KotoScriptFolder>,
     channel: Res<AddDependencyReceiver>,
-    mut script_assets: ResMut<KotoScriptAssets>,
+    mut active_script: ResMut<ActiveScript>,
 ) {
     while let Some(dependency) = channel.receive() {
-        let handle = asset_server.load(
-            dependency
-                .0
-                .strip_prefix(&script_folder.path)
-                .unwrap()
-                .to_path_buf(),
-        );
-        script_assets.dependencies.push(handle);
-    }
-}
-
-/// The folder that the Koto scripts are contained in
-#[derive(Debug, Resource)]
-pub struct KotoScriptFolder {
-    path: PathBuf,
-    script_paths: Vec<PathBuf>,
-    current_script: usize,
-}
-
-impl KotoScriptFolder {
-    /// Initializes a script folder with the given path, and optionally selects an initial script
-    pub fn new(path: &Path, initial_script: Option<&str>) -> Self {
-        let koto_ext = OsStr::new("koto");
-        let mut script_paths: Vec<PathBuf> = fs::read_dir(path)
-            .unwrap()
-            .filter_map(|dir_entry| {
-                let entry_path = dir_entry.unwrap().path();
-                if entry_path.extension() == Some(koto_ext) {
-                    Some(entry_path)
-                } else {
-                    None
-                }
-            })
-            .collect();
-
-        script_paths.sort();
-
-        let current_script = if let Some(initial_script) = initial_script {
-            let script_name = if initial_script.ends_with(".koto") {
-                OsString::from(initial_script)
-            } else {
-                OsString::from(format!("{initial_script}.koto"))
-            };
-            script_paths
-                .iter()
-                .position(|path| path.file_name() == Some(&script_name))
-                .expect("Invalid script name")
+        if let Ok(path_in_assets) = dependency.0.strip_prefix(&assets_folder_path.0) {
+            let handle = asset_server.load(path_in_assets.to_owned());
+            active_script.dependencies.push(handle);
         } else {
-            0
-        };
-
-        Self {
-            path: path.into(),
-            script_paths,
-            current_script,
-        }
-    }
-
-    /// Gets the current script's name
-    pub fn current_script_name(&self) -> String {
-        self.script_paths[self.current_script]
-            .file_name()
-            .unwrap()
-            .to_str()
-            .unwrap()
-            .into()
-    }
-
-    /// Loads the next script in the folder
-    ///
-    /// If the last script in the folder is active, then the function cycles around to the first
-    /// script in the folder.
-    pub fn next_script(&mut self) {
-        if self.current_script == self.script_paths.len() - 1 {
-            self.current_script = 0;
-        } else {
-            self.current_script += 1;
-        }
-    }
-
-    /// Loads the previous script in the folder
-    ///
-    /// If the first script in the folder is active, then the function cycles around to the last
-    /// script in the folder.
-    pub fn previous_script(&mut self) {
-        if self.current_script == 0 {
-            self.current_script = self.script_paths.len() - 1;
-        } else {
-            self.current_script -= 1;
+            error!(
+                "Unable to find path in assets folder for {}",
+                dependency.0.to_string_lossy()
+            );
         }
     }
 }
 
-// The script as loaded by the asset loader
+/// A Koto script as read from the assets folder
 #[derive(Asset, TypePath, Debug)]
-pub struct KotoScript(Box<str>);
+pub struct KotoScript {
+    /// The script's contents
+    pub script: String,
+    /// The script's path in the assets folder
+    ///
+    /// Note that Koto currently requires absolute paths for dependency resolution, so this path
+    /// needs to be converted to include the asset folder's path before passing it to Koto.
+    pub path: PathBuf,
+}
 
 // The currently loaded script assets
 #[derive(Default, Resource)]
-struct KotoScriptAssets {
-    script: Handle<KotoScript>,
+struct ActiveScript {
+    script: Option<Handle<KotoScript>>,
     dependencies: Vec<Handle<KotoScript>>,
 }
+
+#[derive(Default, Resource)]
+struct AssetsFolderPath(PathBuf);
 
 #[derive(Debug, thiserror::Error)]
 pub enum KotoScriptAssetLoaderError {
@@ -322,12 +260,15 @@ impl AssetLoader for KotoScriptAssetLoader {
         &'a self,
         reader: &'a mut Reader<'_>,
         _settings: &'a (),
-        _load_context: &'a mut LoadContext<'_>,
+        load_context: &'a mut LoadContext<'_>,
     ) -> Result<Self::Asset, Self::Error> {
         let mut bytes = Vec::new();
         reader.read_to_end(&mut bytes).await?;
-        let script = str::from_utf8(&bytes)?;
-        Ok(KotoScript(script.into()))
+        let script = str::from_utf8(&bytes)?.to_string();
+        Ok(KotoScript {
+            script,
+            path: load_context.path().into(),
+        })
     }
 
     fn extensions(&self) -> &[&str] {
@@ -369,14 +310,14 @@ impl KotoRuntime {
     fn compile_script(
         &mut self,
         script: &str,
-        script_path: PathBuf,
+        script_path: Option<PathBuf>,
         call_setup: bool,
     ) -> Result<(), ()> {
         let now = std::time::Instant::now();
 
         self.is_ready = false;
 
-        if let Err(error) = self.runtime.set_script_path(Some(script_path)) {
+        if let Err(error) = self.runtime.set_script_path(script_path) {
             error!("Error while setting script path:\n{error}");
             return Err(());
         }
