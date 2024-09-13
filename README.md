@@ -33,8 +33,10 @@ discussions, or the [Koto discord][discord].
 
 ## Supported Versions
 
-**Bevy**: `v0.14.1`
-**Koto**: `v0.14`
+| `bevy_koto` | `bevy`  | `koto`  |
+| ----------- | ------- | ------- |
+| `v0.2`      | `v0.14` | `v0.14` |
+| `v0.1`      | `v0.13` | `v0.14` |
 
 [bevy]: https://bevyengine.org
 [discord]: https://discord.gg/JeV8RuK4CT
