@@ -27,7 +27,7 @@ koto_geometry = "0.14"
 koto_random = "0.14"
 
 [dependencies.bevy]
-version = "0.14.1"
+version = "0.14"
 default-features = false
 features = ["bevy_asset", "bevy_core_pipeline", "bevy_sprite", "bevy_text"]
 
@@ -38,7 +38,7 @@ anyhow = "1.0.82"
 clap = { version = "4.5.4", features = ["derive"] }
 
 [dev-dependencies.bevy]
-version = "0.14.1"
+version = "0.14"
 default-features = false
 features = [
   "bevy_asset",
