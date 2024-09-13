@@ -57,9 +57,7 @@ fn on_startup(koto: Res<KotoRuntime>, set_clear_color: Res<SetClearColorSender>)
                     Color::srgba(f32::from(n1), f32::from(n2), f32::from(n3), f32::from(n4))
                 }
                 [Object(o)] if o.is_a::<KotoColor>() => koto_to_bevy_color(*o.cast::<KotoColor>()?),
-                unexpected => {
-                    return type_error_with_slice("three or four Numbers", unexpected);
-                }
+                unexpected => return unexpected_args("three or four Numbers", unexpected),
             };
 
             set_clear_color.send(SetClearColor(color));

@@ -47,7 +47,7 @@ fn setup_koto(koto: Res<KotoRuntime>, update_projection: Res<UpdateOrthoProjecti
                 update_projection.send(UpdateOrthoProjection::Scale(zoom.into()));
                 Ok(KValue::Null)
             }
-            unexpected => type_error_with_slice("a Number", unexpected),
+            unexpected => unexpected_args("a Number", unexpected),
         }
     });
 }

@@ -21,10 +21,10 @@ parking_lot = "0.12"
 # derive(Error)
 thiserror = "1"
 
-koto = "0.14"
-koto_color = "0.14"
-koto_geometry = "0.14"
-koto_random = "0.14"
+koto = { git = "https://github.com/koto-lang/koto" }
+koto_color = { git = "https://github.com/koto-lang/koto" }
+koto_geometry = { git = "https://github.com/koto-lang/koto" }
+koto_random = { git = "https://github.com/koto-lang/koto" }
 
 [dependencies.bevy]
 version = "0.14"

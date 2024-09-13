@@ -77,7 +77,7 @@ fn on_startup(
         cloned!(make_shape);
         move |ctx| match ctx.args() {
             &[] => make_shape(Shape::Circle),
-            unexpected => type_error_with_slice("no arguments", unexpected),
+            unexpected => unexpected_args("no arguments", unexpected),
         }
     });
 
@@ -85,7 +85,7 @@ fn on_startup(
         cloned!(make_shape);
         move |ctx| match ctx.args() {
             &[KValue::Number(n)] if n > 1 => make_shape(Shape::Polygon(n.into())),
-            unexpected => type_error_with_slice("no arguments", unexpected),
+            unexpected => unexpected_args("no arguments", unexpected),
         }
     });
 
@@ -93,7 +93,7 @@ fn on_startup(
         cloned!(make_shape);
         move |ctx| match ctx.args() {
             &[] => make_shape(Shape::Rect(1.0, 1.0)),
-            unexpected => type_error_with_slice("no arguments", unexpected),
+            unexpected => unexpected_args("no arguments", unexpected),
         }
     });
 

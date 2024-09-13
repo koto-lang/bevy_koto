@@ -10,7 +10,11 @@ use bevy::{
 };
 use cloned::cloned;
 use koto::prelude::*;
-use std::{path::PathBuf, str, time::Duration};
+use std::{
+    path::{Path, PathBuf},
+    str,
+    time::Duration,
+};
 
 #[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct KotoSchedule;
@@ -140,7 +144,7 @@ fn process_load_script_events(
 
         let script_path = assets_folder.0.join(&script.path);
         if koto
-            .initialize_script(&script.script, Some(script_path), event.call_setup)
+            .initialize_script(&script.script, Some(&script_path), event.call_setup)
             .is_ok()
         {
             if event.call_setup {
@@ -302,7 +306,7 @@ impl KotoRuntime {
     fn initialize_script(
         &mut self,
         script: &str,
-        script_path: Option<PathBuf>,
+        script_path: Option<&Path>,
         call_setup: bool,
     ) -> Result<(), ()> {
         let now = std::time::Instant::now();

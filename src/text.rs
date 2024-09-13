@@ -56,7 +56,7 @@ fn on_startup(
             let text = match ctx.args() {
                 [KValue::Str(s)] => s.to_string(),
                 [] => String::new(),
-                unexpected => return type_error_with_slice("an optional string", unexpected),
+                unexpected => return unexpected_args("an optional string", unexpected),
             };
 
             let result: KObject = KotoText {
