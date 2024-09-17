@@ -7,7 +7,9 @@ use crate::runtime::{
     KotoUpdate, ScriptLoaded,
 };
 
-/// Spawns a 2d camera and exposes a `set_zoom` function to Koto
+/// Exposes a `set_zoom` function to Koto that modifies the zoom of a 2D camera
+///
+/// The camera needs to have the [KotoCamera] component attached to it for the
 pub struct KotoCameraPlugin;
 
 impl Plugin for KotoCameraPlugin {
@@ -19,7 +21,6 @@ impl Plugin for KotoCameraPlugin {
 
         app.insert_resource(update_ortho_projection_sender)
             .insert_resource(update_ortho_projection_receiver)
-            .add_systems(Startup, setup_camera)
             .add_systems(Startup, setup_koto)
             .add_systems(KotoSchedule, on_script_loaded.in_set(KotoUpdate::PreUpdate))
             .add_systems(Update, (on_window_resized, update_orthographic_projection));
@@ -36,13 +37,7 @@ type UpdateOrthoProjectionReceiver = KotoReceiver<UpdateOrthoProjection>;
 
 /// Used to help identify our main camera
 #[derive(Component)]
-pub struct MainCamera;
-
-fn setup_camera(mut commands: Commands) {
-    commands
-        .spawn(Camera2dBundle { ..default() })
-        .insert(MainCamera);
-}
+pub struct KotoCamera;
 
 fn setup_koto(koto: Res<KotoRuntime>, update_projection: Res<UpdateOrthoProjectionSender>) {
     koto.prelude().add_fn("set_zoom", {
@@ -57,10 +52,10 @@ fn setup_koto(koto: Res<KotoRuntime>, update_projection: Res<UpdateOrthoProjecti
     });
 }
 
-// Reset the camera projection when a new script is loaded
+// Reset the camera's projection when a script is loaded
 fn on_script_loaded(
     mut script_loaded_events: EventReader<ScriptLoaded>,
-    mut camera_query: Query<&mut OrthographicProjection, With<MainCamera>>,
+    mut camera_query: Query<&mut OrthographicProjection, With<KotoCamera>>,
 ) {
     for _ in script_loaded_events.read() {
         let mut camera = camera_query.single_mut();
@@ -70,7 +65,7 @@ fn on_script_loaded(
 
 fn update_orthographic_projection(
     channel: Res<UpdateOrthoProjectionReceiver>,
-    mut camera_query: Query<&mut OrthographicProjection, With<MainCamera>>,
+    mut camera_query: Query<&mut OrthographicProjection, With<KotoCamera>>,
 ) {
     let mut camera = camera_query.single_mut();
     while let Some(event) = channel.receive() {
@@ -82,7 +77,7 @@ fn update_orthographic_projection(
 
 fn on_window_resized(
     mut window_resized_events: EventReader<WindowResized>,
-    mut camera_query: Query<&mut OrthographicProjection, With<MainCamera>>,
+    mut camera_query: Query<&mut OrthographicProjection, With<KotoCamera>>,
 ) {
     let mut camera = camera_query.single_mut();
     for event in window_resized_events.read() {

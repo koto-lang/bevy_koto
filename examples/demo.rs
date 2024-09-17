@@ -2,9 +2,7 @@ use std::path::Path;
 
 use anyhow::Result;
 use bevy::{
-    asset::{io::file::FileAssetReader, LoadedFolder},
-    diagnostic::FrameTimeDiagnosticsPlugin,
-    ecs::schedule::ExecutorKind,
+    asset::LoadedFolder, diagnostic::FrameTimeDiagnosticsPlugin, ecs::schedule::ExecutorKind,
     prelude::*,
 };
 use bevy_koto::*;
@@ -71,12 +69,12 @@ Press R to reload the current script.
             KotoTextPlugin,
         ))
         .init_state::<AppState>()
-        .add_systems(OnEnter(AppState::Setup), load_script_folder)
+        .add_systems(OnEnter(AppState::Setup), setup)
         .add_systems(
             Update,
             check_script_events.run_if(in_state(AppState::Setup)),
         )
-        .add_systems(OnEnter(AppState::Ready), setup)
+        .add_systems(OnEnter(AppState::Ready), ready)
         .add_systems(Update, process_keypresses.run_if(in_state(AppState::Ready)))
         .run();
 
@@ -90,7 +88,11 @@ enum AppState {
     Ready,
 }
 
-fn load_script_folder(asset_server: Res<AssetServer>, mut commands: Commands) {
+fn setup(asset_server: Res<AssetServer>, mut commands: Commands) {
+    commands
+        .spawn(Camera2dBundle { ..default() })
+        .insert(KotoCamera);
+
     commands.insert_resource(ScriptLoader {
         script_folder: asset_server.load_folder("scripts"),
         ..default()
@@ -109,7 +111,7 @@ fn check_script_events(
     }
 }
 
-fn setup(
+fn ready(
     loaded_folders: Res<Assets<LoadedFolder>>,
     mut script_loader: ResMut<ScriptLoader>,
     mut scripts: ResMut<Assets<KotoScript>>,

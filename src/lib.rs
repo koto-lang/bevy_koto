@@ -14,7 +14,7 @@ mod shape;
 mod text;
 mod window;
 
-pub use camera::KotoCameraPlugin;
+pub use camera::{KotoCamera, KotoCameraPlugin};
 pub use color::KotoColorPlugin;
 pub use entity::KotoEntityPlugin;
 pub use geometry::KotoGeometryPlugin;
