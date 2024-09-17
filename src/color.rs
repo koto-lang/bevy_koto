@@ -1,9 +1,6 @@
 use crate::{
-    entity::{KotoEntityEvent, KotoEntityPlugin},
-    runtime::{
-        make_channel, KotoReceiver, KotoRuntime, KotoRuntimePlugin, KotoSchedule, KotoSender,
-        KotoUpdate, ScriptLoaded,
-    },
+    koto_channel, koto_entity_channel, KotoEntityPlugin, KotoEntityReceiver, KotoReceiver,
+    KotoRuntime, KotoRuntimePlugin, KotoSchedule, KotoSender, KotoUpdate, ScriptLoaded,
 };
 use bevy::prelude::*;
 use cloned::cloned;
@@ -21,9 +18,9 @@ impl Plugin for KotoColorPlugin {
         assert!(app.is_plugin_added::<KotoRuntimePlugin>());
         assert!(app.is_plugin_added::<KotoEntityPlugin>());
 
-        let (set_clear_color_sender, set_clear_color_receiver) = make_channel::<SetClearColor>();
+        let (set_clear_color_sender, set_clear_color_receiver) = koto_channel::<SetClearColor>();
         let (update_color_sender, update_color_receiver) =
-            make_channel::<UpdateColorMaterialEvent>();
+            koto_entity_channel::<UpdateColorMaterial>();
 
         app.insert_resource(set_clear_color_sender)
             .insert_resource(set_clear_color_receiver)
@@ -39,7 +36,7 @@ impl Plugin for KotoColorPlugin {
     }
 }
 
-fn on_startup(koto: Res<KotoRuntime>, set_clear_color: Res<SetClearColorSender>) {
+fn on_startup(koto: Res<KotoRuntime>, set_clear_color: Res<KotoSender<SetClearColor>>) {
     let prelude = koto.prelude();
 
     prelude.insert("color", koto_color::make_module());
@@ -77,25 +74,24 @@ fn on_script_loaded(
     }
 }
 
-fn set_clear_color(channel: Res<SetClearColorReceiver>, mut clear_color: ResMut<ClearColor>) {
+fn set_clear_color(channel: Res<KotoReceiver<SetClearColor>>, mut clear_color: ResMut<ClearColor>) {
     while let Some(event) = channel.receive() {
         clear_color.0 = event.0;
     }
 }
 
+/// Event sent to set the value of the ClearColor resource
 #[derive(Clone, Event)]
 pub struct SetClearColor(Color);
 
-pub type SetClearColorSender = KotoSender<SetClearColor>;
-type SetClearColorReceiver = KotoReceiver<SetClearColor>;
-
+/// A function that converts a Koto color into a Bevy color
 pub fn koto_to_bevy_color(c: KotoColor) -> Color {
     let c = c.inner();
     Color::srgba(c.red, c.green, c.blue, c.alpha)
 }
 
 fn koto_to_bevy_color_material_events(
-    channel: Res<UpdateColorMaterialReceiver>,
+    channel: Res<KotoEntityReceiver<UpdateColorMaterial>>,
     query: Query<&Handle<ColorMaterial>>,
     asset_server: Res<AssetServer>,
     mut materials: ResMut<Assets<ColorMaterial>>,
@@ -115,13 +111,13 @@ fn koto_to_bevy_color_material_events(
     }
 }
 
+/// Event for updating properties of a `ColorMaterial`
 #[derive(Clone, Event)]
 pub enum UpdateColorMaterial {
+    /// Sets the material's color
     Color(Color),
+    /// Sets the material's alpha value
     Alpha(f32),
+    /// Sets the material's image path
     SetImagePath(Option<String>),
 }
-
-pub type UpdateColorMaterialEvent = KotoEntityEvent<UpdateColorMaterial>;
-pub type UpdateColorMaterialSender = KotoSender<UpdateColorMaterialEvent>;
-pub type UpdateColorMaterialReceiver = KotoReceiver<UpdateColorMaterialEvent>;

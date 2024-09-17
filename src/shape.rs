@@ -1,17 +1,8 @@
 use crate::{
-    color::{
-        koto_to_bevy_color, KotoColor, KotoColorPlugin, UpdateColorMaterial,
-        UpdateColorMaterialSender,
-    },
-    entity::{
-        KotoEntity, KotoEntityEvent, KotoEntityMapping, KotoEntityPlugin, UpdateEntity,
-        UpdateEntitySender,
-    },
-    geometry::{KotoGeometryPlugin, KotoVec2, UpdateTransform, UpdateTransformSender},
-    runtime::{
-        make_channel, KotoReceiver, KotoRuntime, KotoRuntimePlugin, KotoSchedule, KotoSender,
-        KotoUpdate,
-    },
+    koto_channel, koto_to_bevy_color, KotoColor, KotoColorPlugin, KotoEntity, KotoEntityEvent,
+    KotoEntityMapping, KotoEntityPlugin, KotoEntitySender, KotoGeometryPlugin, KotoReceiver,
+    KotoRuntime, KotoRuntimePlugin, KotoSchedule, KotoSender, KotoUpdate, KotoVec2,
+    UpdateColorMaterial, UpdateKotoEntity, UpdateTransform,
 };
 use bevy::{prelude::*, render::view::RenderLayers, sprite::MaterialMesh2dBundle};
 use cloned::cloned;
@@ -32,7 +23,7 @@ impl Plugin for KotoShapePlugin {
         assert!(app.is_plugin_added::<KotoColorPlugin>());
         assert!(app.is_plugin_added::<KotoGeometryPlugin>());
 
-        let (spawn_shape_sender, spawn_shape_receiver) = make_channel::<SpawnShape>();
+        let (spawn_shape_sender, spawn_shape_receiver) = koto_channel::<SpawnShape>();
 
         app.insert_resource(spawn_shape_sender)
             .insert_resource(spawn_shape_receiver)
@@ -43,10 +34,10 @@ impl Plugin for KotoShapePlugin {
 
 fn on_startup(
     koto: ResMut<KotoRuntime>,
-    spawn_shape: Res<SpawnShapeSender>,
-    update_shape: Res<UpdateColorMaterialSender>,
-    update_entity: Res<UpdateEntitySender>,
-    update_transform: Res<UpdateTransformSender>,
+    spawn_shape: Res<KotoSender<SpawnShape>>,
+    update_shape: Res<KotoEntitySender<UpdateColorMaterial>>,
+    update_entity: Res<KotoEntitySender<UpdateKotoEntity>>,
+    update_transform: Res<KotoEntitySender<UpdateTransform>>,
 ) {
     let shape_module = KMap::with_type("shape");
 
@@ -54,7 +45,7 @@ fn on_startup(
         cloned!(spawn_shape, update_entity, update_shape, update_transform);
 
         move |shape: Shape| {
-            let entity = KotoEntityMapping::new();
+            let entity = KotoEntityMapping::default();
 
             let result: KObject = KotoShape {
                 entity: entity.clone(),
@@ -101,7 +92,7 @@ fn on_startup(
 }
 
 fn spawn_shapes(
-    channel: Res<SpawnShapeReceiver>,
+    channel: Res<KotoReceiver<SpawnShape>>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut commands: Commands,
@@ -145,17 +136,14 @@ enum Shape {
     Polygon(usize),
 }
 
-type SpawnShapeSender = KotoSender<SpawnShape>;
-type SpawnShapeReceiver = KotoReceiver<SpawnShape>;
-
 #[derive(Clone, KotoType, KotoCopy)]
 #[koto(type_name = "Shape")]
 struct KotoShape {
     entity: KotoEntityMapping,
     state: KValue,
-    update_shape: UpdateColorMaterialSender,
-    update_entity: UpdateEntitySender,
-    update_transform: UpdateTransformSender,
+    update_shape: KotoEntitySender<UpdateColorMaterial>,
+    update_entity: KotoEntitySender<UpdateKotoEntity>,
+    update_transform: KotoEntitySender<UpdateTransform>,
 }
 
 impl KotoObject for KotoShape {}
@@ -317,7 +305,7 @@ impl KotoShape {
         let this = ctx.instance()?;
         this.update_entity.send(KotoEntityEvent::new(
             this.entity.clone(),
-            UpdateEntity::SetOnUpdate(Some((f, ctx.vm.spawn_shared_vm()))),
+            UpdateKotoEntity::SetOnUpdate(Some((f, ctx.vm.spawn_shared_vm()))),
         ));
 
         ctx.instance_result()
@@ -328,7 +316,7 @@ impl KotoShape {
         let this = ctx.instance()?;
         this.update_entity.send(KotoEntityEvent::new(
             this.entity.clone(),
-            UpdateEntity::Despawn,
+            UpdateKotoEntity::Despawn,
         ));
 
         Ok(KValue::Null)

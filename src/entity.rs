@@ -1,8 +1,4 @@
-use crate::runtime::{
-    make_channel, KotoReceiver, KotoRuntimePlugin, KotoSchedule, KotoSender, KotoUpdate,
-    ScriptLoaded,
-};
-
+use crate::{KotoReceiver, KotoRuntimePlugin, KotoSchedule, KotoSender, KotoUpdate, ScriptLoaded};
 use bevy::prelude::*;
 use koto::prelude::*;
 use parking_lot::RwLock;
@@ -18,7 +14,8 @@ impl Plugin for KotoEntityPlugin {
     fn build(&self, app: &mut App) {
         assert!(app.is_plugin_added::<KotoRuntimePlugin>());
 
-        let (update_entity_sender, update_entity_receiver) = make_channel::<UpdateEntityEvent>();
+        let (update_entity_sender, update_entity_receiver) =
+            koto_entity_channel::<UpdateKotoEntity>();
 
         app.insert_resource(update_entity_sender)
             .insert_resource(update_entity_receiver)
@@ -60,6 +57,7 @@ fn update_koto_entities(
         // If ref_count is 1 then the Koto script is no longer referencing the entity,
         // so it can be despawned.
         if koto_entity.object.ref_count() == 1 || !koto_entity.is_active {
+            debug!("Despawning {}", koto_entity.entity.get());
             commands.entity(koto_entity.entity.get()).despawn();
         }
     }
@@ -79,7 +77,7 @@ fn update_koto_entities(
 }
 
 fn koto_to_bevy_entity_events(
-    channel: Res<UpdateEntityReceiver>,
+    channel: Res<KotoEntityReceiver<UpdateKotoEntity>>,
     mut query: Query<&mut KotoEntity>,
     mut commands: Commands,
 ) {
@@ -87,12 +85,13 @@ fn koto_to_bevy_entity_events(
         let bevy_entity = event.entity.get();
         let mut koto_entity = query.get_mut(bevy_entity).unwrap();
         match event.event {
-            UpdateEntity::SetOnUpdate(on_update) => koto_entity.on_update = on_update,
-            UpdateEntity::Despawn => commands.entity(bevy_entity).despawn(),
+            UpdateKotoEntity::SetOnUpdate(on_update) => koto_entity.on_update = on_update,
+            UpdateKotoEntity::Despawn => commands.entity(bevy_entity).despawn(),
         }
     }
 }
 
+/// A Koto-scriptable Bevy entity
 #[derive(Debug, Clone, Component)]
 pub struct KotoEntity {
     /// The Koto object that corresponds to the Bevy entity
@@ -106,6 +105,7 @@ pub struct KotoEntity {
 }
 
 impl KotoEntity {
+    /// Produces a KotoEntity from the given `KObject` and entity mapping
     pub fn new(object: KObject, entity: KotoEntityMapping) -> Self {
         Self {
             object,
@@ -116,17 +116,14 @@ impl KotoEntity {
     }
 }
 
+/// Event for updating properties of the Koto entity
 #[derive(Clone, Event)]
-pub enum UpdateEntity {
-    /// Sets the function that should be called when updating the entity
+pub enum UpdateKotoEntity {
+    /// Sets the `on_update` function that should be called when updating the entity
     SetOnUpdate(Option<(KValue, KotoVm)>),
-    /// The entity has been manually despawned from Koto
+    /// The entity has been manually despawned from Koto, and should be despawned in Bevy
     Despawn,
 }
-
-pub type UpdateEntityEvent = KotoEntityEvent<UpdateEntity>;
-pub type UpdateEntitySender = KotoSender<UpdateEntityEvent>;
-type UpdateEntityReceiver = KotoReceiver<UpdateEntityEvent>;
 
 /// A Bevy entity that can be referred to from Koto scripts
 ///
@@ -141,12 +138,6 @@ pub struct KotoEntityMapping {
 }
 
 impl KotoEntityMapping {
-    pub fn new() -> Self {
-        Self {
-            bevy_entity: Arc::new(RwLock::new(Entity::PLACEHOLDER)),
-        }
-    }
-
     /// Assigns the given Bevy entity to the Koto entity
     pub fn assign_bevy_entity(&mut self, entity: Entity) {
         let mut inner = self.bevy_entity.write();
@@ -154,22 +145,43 @@ impl KotoEntityMapping {
         *inner = entity;
     }
 
+    /// Gets the Bevy entity associated with the Koto entity
     pub fn get(&self) -> Entity {
         *self.bevy_entity.read()
     }
 }
 
+impl Default for KotoEntityMapping {
+    fn default() -> Self {
+        Self {
+            bevy_entity: Arc::new(RwLock::new(Entity::PLACEHOLDER)),
+        }
+    }
+}
+
+/// An event from Koto associated with a specific Bevy entity
 #[derive(Clone)]
 pub struct KotoEntityEvent<T> {
+    /// The mapping to the Bevy entity associated with the event
     pub entity: KotoEntityMapping,
+    /// The event associated with the Bevy entity
     pub event: T,
 }
 
 impl<T> KotoEntityEvent<T> {
-    pub fn new(id: KotoEntityMapping, value: T) -> Self {
-        Self {
-            entity: id,
-            event: value,
-        }
+    /// Returns a new entity event for the given entity mapping and event value
+    pub fn new(entity: KotoEntityMapping, event: T) -> Self {
+        Self { entity, event }
     }
+}
+
+/// A type alias for events being sent from Koto that are associated with a specific entity
+pub type KotoEntitySender<T> = KotoSender<KotoEntityEvent<T>>;
+/// A type alias for events being received from Koto that are associated with a specific entity
+pub type KotoEntityReceiver<T> = KotoReceiver<KotoEntityEvent<T>>;
+
+/// A helper for building a channel for entity events from Koto to Bevy
+pub fn koto_entity_channel<T>() -> (KotoEntitySender<T>, KotoEntityReceiver<T>) {
+    let (sender, receiver) = crossbeam_channel::unbounded();
+    (KotoSender(sender), KotoReceiver(receiver))
 }

@@ -16,10 +16,11 @@ use std::{
     time::Duration,
 };
 
+/// The schedule used to update the Koto runtime
 #[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct KotoSchedule;
 
-/// KotoUpdate sets are executed during PreUpdate
+/// The system set used for updating the Koto runtime
 #[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
 pub enum KotoUpdate {
     /// Detect if the script needs to be reloaded and compiled
@@ -67,7 +68,7 @@ impl Plugin for KotoRuntimePlugin {
             order.insert_after(PreUpdate, KotoSchedule);
         }
 
-        let (add_dependency_sender, add_dependency_receiver) = make_channel::<AddDependency>();
+        let (add_dependency_sender, add_dependency_receiver) = koto_channel::<AddDependency>();
         let koto_runtime = KotoRuntime::new(add_dependency_sender.clone());
 
         // Hack to get the root path of the assets folder,
@@ -198,7 +199,7 @@ fn run_script_update(mut koto: ResMut<KotoRuntime>, time: Res<Time>) {
 fn add_script_dependencies(
     assets_folder_path: Res<AssetsFolderPath>,
     asset_server: Res<AssetServer>,
-    channel: Res<AddDependencyReceiver>,
+    channel: Res<KotoReceiver<AddDependency>>,
     mut active_script: ResMut<ActiveScript>,
 ) {
     while let Some(dependency) = channel.receive() {
@@ -272,6 +273,7 @@ impl AssetLoader for KotoScriptAssetLoader {
     }
 }
 
+/// The Koto runtime
 #[derive(Default, Resource)]
 pub struct KotoRuntime {
     runtime: Koto,
@@ -280,7 +282,7 @@ pub struct KotoRuntime {
 }
 
 impl KotoRuntime {
-    fn new(add_dependency_sender: AddDependencySender) -> Self {
+    fn new(add_dependency_sender: KotoSender<AddDependency>) -> Self {
         let runtime = Koto::with_settings(
             KotoSettings::default()
                 .with_execution_limit(Duration::from_secs(1))
@@ -299,6 +301,7 @@ impl KotoRuntime {
         }
     }
 
+    /// Returns true if a script has been successfully loaded
     pub fn is_ready(&self) -> bool {
         self.is_ready
     }
@@ -376,6 +379,7 @@ impl KotoRuntime {
         trace!("update: {:.3}ms", now.elapsed().as_secs_f64() * 1000.0)
     }
 
+    /// Runs a function that has been exported from the currently running script
     pub fn run_exported_function(
         &mut self,
         function_name: &str,
@@ -394,33 +398,48 @@ impl KotoRuntime {
         }
     }
 
+    /// The Koto runtime's prelude
     pub fn prelude(&self) -> &KMap {
         self.runtime.prelude()
     }
 
+    /// The user data that is being held by the current script
     pub fn user_data(&self) -> &KValue {
         &self.user_data
     }
 }
 
-pub fn make_channel<T>() -> (KotoSender<T>, KotoReceiver<T>) {
+/// A helper for making a channel for events from Koto -> Bevy
+pub fn koto_channel<T>() -> (KotoSender<T>, KotoReceiver<T>) {
     let (sender, receiver) = crossbeam_channel::unbounded();
     (KotoSender(sender), KotoReceiver(receiver))
 }
 
+/// A sender for events from Koto -> Bevy
+///
+/// See [koto_channel]
 #[derive(Clone, Debug, Resource)]
-pub struct KotoSender<T>(crossbeam_channel::Sender<T>);
+pub struct KotoSender<T>(pub crossbeam_channel::Sender<T>);
 
 impl<T> KotoSender<T> {
+    /// Sends a value on the channel
+    ///
+    /// This is non-blocking, and will panic if sending fails.
     pub fn send(&self, value: T) {
         self.0.try_send(value).expect("Failed to send value")
     }
 }
 
+/// A receiver for events from Koto -> Bevy
+///
+/// See [koto_channel]
 #[derive(Clone, Debug, Resource)]
-pub struct KotoReceiver<T>(crossbeam_channel::Receiver<T>);
+pub struct KotoReceiver<T>(pub crossbeam_channel::Receiver<T>);
 
 impl<T> KotoReceiver<T> {
+    /// Receives a value on the channel
+    ///
+    /// This is non-blocking, if no value is available then `None` is returned.
     pub fn receive(&self) -> Option<T> {
         self.0.try_recv().ok()
     }
@@ -428,6 +447,3 @@ impl<T> KotoReceiver<T> {
 
 #[derive(Clone, Debug)]
 struct AddDependency(PathBuf);
-
-type AddDependencySender = KotoSender<AddDependency>;
-type AddDependencyReceiver = KotoReceiver<AddDependency>;

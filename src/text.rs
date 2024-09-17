@@ -1,17 +1,8 @@
 use crate::{
-    color::{
-        koto_to_bevy_color, KotoColor, KotoColorPlugin, UpdateColorMaterial,
-        UpdateColorMaterialSender,
-    },
-    entity::{
-        KotoEntity, KotoEntityEvent, KotoEntityMapping, KotoEntityPlugin, UpdateEntity,
-        UpdateEntitySender,
-    },
-    geometry::{KotoGeometryPlugin, KotoVec2, UpdateTransform, UpdateTransformSender},
-    runtime::{
-        make_channel, KotoReceiver, KotoRuntime, KotoRuntimePlugin, KotoSchedule, KotoSender,
-        KotoUpdate,
-    },
+    koto_channel, koto_to_bevy_color, KotoColor, KotoColorPlugin, KotoEntity, KotoEntityEvent,
+    KotoEntityMapping, KotoEntityPlugin, KotoEntitySender, KotoGeometryPlugin, KotoReceiver,
+    KotoRuntime, KotoRuntimePlugin, KotoSchedule, KotoSender, KotoUpdate, KotoVec2,
+    UpdateColorMaterial, UpdateKotoEntity, UpdateTransform,
 };
 use bevy::prelude::*;
 use cloned::cloned;
@@ -30,7 +21,7 @@ impl Plugin for KotoTextPlugin {
         assert!(app.is_plugin_added::<KotoColorPlugin>());
         assert!(app.is_plugin_added::<KotoGeometryPlugin>());
 
-        let (spawn_text_sender, spawn_text_receiver) = make_channel::<SpawnText>();
+        let (spawn_text_sender, spawn_text_receiver) = koto_channel::<SpawnText>();
 
         app.insert_resource(spawn_text_sender)
             .insert_resource(spawn_text_receiver)
@@ -41,17 +32,17 @@ impl Plugin for KotoTextPlugin {
 
 fn on_startup(
     koto: ResMut<KotoRuntime>,
-    spawn_text: Res<SpawnTextSender>,
-    update_material: Res<UpdateColorMaterialSender>,
-    update_entity: Res<UpdateEntitySender>,
-    update_transform: Res<UpdateTransformSender>,
+    spawn_text: Res<KotoSender<SpawnText>>,
+    update_material: Res<KotoEntitySender<UpdateColorMaterial>>,
+    update_entity: Res<KotoEntitySender<UpdateKotoEntity>>,
+    update_transform: Res<KotoEntitySender<UpdateTransform>>,
 ) {
     let prelude = koto.prelude();
     prelude.add_fn("make_text", {
         cloned!(spawn_text, update_entity, update_material, update_transform);
 
         move |ctx| {
-            let entity = KotoEntityMapping::new();
+            let entity = KotoEntityMapping::default();
 
             let text = match ctx.args() {
                 [KValue::Str(s)] => s.to_string(),
@@ -77,7 +68,7 @@ fn on_startup(
     });
 }
 
-fn spawn_text(channel: Res<SpawnTextReceiver>, mut commands: Commands) {
+fn spawn_text(channel: Res<KotoReceiver<SpawnText>>, mut commands: Commands) {
     while let Some(SpawnText {
         mut koto_entity,
         text,
@@ -110,16 +101,13 @@ struct SpawnText {
     text: String,
 }
 
-type SpawnTextSender = KotoSender<SpawnText>;
-type SpawnTextReceiver = KotoReceiver<SpawnText>;
-
 #[derive(Clone, KotoType, KotoCopy)]
 #[koto(type_name = "Text")]
 struct KotoText {
     entity: KotoEntityMapping,
-    update_material: UpdateColorMaterialSender,
-    update_entity: UpdateEntitySender,
-    update_transform: UpdateTransformSender,
+    update_material: KotoEntitySender<UpdateColorMaterial>,
+    update_entity: KotoEntitySender<UpdateKotoEntity>,
+    update_transform: KotoEntitySender<UpdateTransform>,
 }
 
 impl KotoObject for KotoText {}
@@ -282,7 +270,7 @@ impl KotoText {
         let this = ctx.instance()?;
         this.update_entity.send(KotoEntityEvent::new(
             this.entity.clone(),
-            UpdateEntity::SetOnUpdate(Some((f, ctx.vm.spawn_shared_vm()))),
+            UpdateKotoEntity::SetOnUpdate(Some((f, ctx.vm.spawn_shared_vm()))),
         ));
 
         ctx.instance_result()
@@ -293,7 +281,7 @@ impl KotoText {
         let this = ctx.instance()?;
         this.update_entity.send(KotoEntityEvent::new(
             this.entity.clone(),
-            UpdateEntity::Despawn,
+            UpdateKotoEntity::Despawn,
         ));
 
         Ok(KValue::Null)

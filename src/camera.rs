@@ -1,11 +1,10 @@
+use crate::{
+    koto_channel, KotoReceiver, KotoRuntime, KotoRuntimePlugin, KotoSchedule, KotoSender,
+    KotoUpdate, ScriptLoaded,
+};
 use bevy::{prelude::*, render::camera::ScalingMode, window::WindowResized};
 use cloned::cloned;
 use koto::prelude::*;
-
-use crate::runtime::{
-    make_channel, KotoReceiver, KotoRuntime, KotoRuntimePlugin, KotoSchedule, KotoSender,
-    KotoUpdate, ScriptLoaded,
-};
 
 /// Exposes a `set_zoom` function to Koto that modifies the zoom of a 2D camera
 ///
@@ -17,34 +16,36 @@ impl Plugin for KotoCameraPlugin {
         debug_assert!(app.is_plugin_added::<KotoRuntimePlugin>());
 
         let (update_ortho_projection_sender, update_ortho_projection_receiver) =
-            make_channel::<UpdateOrthoProjection>();
+            koto_channel::<UpdateOrthographicProjection>();
 
         app.insert_resource(update_ortho_projection_sender)
             .insert_resource(update_ortho_projection_receiver)
-            .add_systems(Startup, setup_koto)
+            .add_systems(Startup, on_startup)
             .add_systems(KotoSchedule, on_script_loaded.in_set(KotoUpdate::PreUpdate))
             .add_systems(Update, (on_window_resized, update_orthographic_projection));
     }
 }
 
+/// Event for updating the camera's orthographic projection
 #[derive(Clone, Event)]
-pub enum UpdateOrthoProjection {
+pub enum UpdateOrthographicProjection {
+    /// Sets the projection's scale
     Scale(f32),
 }
-
-pub type UpdateOrthoProjectionSender = KotoSender<UpdateOrthoProjection>;
-type UpdateOrthoProjectionReceiver = KotoReceiver<UpdateOrthoProjection>;
 
 /// Used to help identify our main camera
 #[derive(Component)]
 pub struct KotoCamera;
 
-fn setup_koto(koto: Res<KotoRuntime>, update_projection: Res<UpdateOrthoProjectionSender>) {
+fn on_startup(
+    koto: Res<KotoRuntime>,
+    update_projection: Res<KotoSender<UpdateOrthographicProjection>>,
+) {
     koto.prelude().add_fn("set_zoom", {
         cloned!(update_projection);
         move |ctx| match ctx.args() {
             [KValue::Number(zoom)] => {
-                update_projection.send(UpdateOrthoProjection::Scale(zoom.into()));
+                update_projection.send(UpdateOrthographicProjection::Scale(zoom.into()));
                 Ok(KValue::Null)
             }
             unexpected => unexpected_args("a Number", unexpected),
@@ -64,13 +65,13 @@ fn on_script_loaded(
 }
 
 fn update_orthographic_projection(
-    channel: Res<UpdateOrthoProjectionReceiver>,
+    channel: Res<KotoReceiver<UpdateOrthographicProjection>>,
     mut camera_query: Query<&mut OrthographicProjection, With<KotoCamera>>,
 ) {
     let mut camera = camera_query.single_mut();
     while let Some(event) = channel.receive() {
         match event {
-            UpdateOrthoProjection::Scale(scale) => camera.scale = scale,
+            UpdateOrthographicProjection::Scale(scale) => camera.scale = scale,
         }
     }
 }
