@@ -40,13 +40,9 @@ pub enum KotoUpdate {
 ///
 /// The [KotoSchedule] schedule is set up by the plugin, with the [KotoUpdate] system sets.
 ///
-/// The active script is defined in the [ActiveScript] asset,
-/// and is loaded via a [KotoScriptFolder] resource, which is currently set up by the application.
-///
 /// The following events are also added by the plugin:
-/// - [ReloadScript]: if this is triggered then the script will be reloaded.
-/// - [ScriptLoaded]: this is triggered when the script has been reloaded.
-/// - [ScriptCompiled]: this is triggered when the script has been successfully compiled and run.
+/// - [LoadScript]: Sent to load a new script
+/// - [ScriptLoaded]: Sent after a script has been successfully loaded and initialized.
 pub struct KotoRuntimePlugin;
 
 impl Plugin for KotoRuntimePlugin {
@@ -81,7 +77,6 @@ impl Plugin for KotoRuntimePlugin {
             .insert_resource(AssetsFolderPath(assets_folder_path))
             .add_event::<LoadScript>()
             .add_event::<ScriptLoaded>()
-            .add_event::<ScriptCompiled>()
             .init_asset::<KotoScript>()
             .register_asset_loader(KotoScriptAssetLoader)
             .add_systems(
@@ -132,7 +127,6 @@ fn process_load_script_events(
     assets: Res<Assets<KotoScript>>,
     mut load_script_events: EventReader<LoadScript>,
     mut script_loaded: EventWriter<ScriptLoaded>,
-    mut script_compiled: EventWriter<ScriptCompiled>,
     mut koto: ResMut<KotoRuntime>,
     mut active_script: ResMut<ActiveScript>,
 ) {
@@ -144,17 +138,15 @@ fn process_load_script_events(
 
         info!("Loading {}", script.path.to_string_lossy());
 
-        if event.call_setup {
-            debug!("Sending ScriptLoaded event");
-            script_loaded.send_default();
-        }
-
         let script_path = assets_folder.0.join(&script.path);
         if koto
-            .compile_script(&script.script, Some(script_path), event.call_setup)
+            .initialize_script(&script.script, Some(script_path), event.call_setup)
             .is_ok()
         {
-            script_compiled.send_default();
+            if event.call_setup {
+                script_loaded.send_default();
+            }
+
             active_script.script = Some(event.script.clone());
             active_script.dependencies.clear();
         }
@@ -186,12 +178,12 @@ impl LoadScript {
     }
 }
 
-// TODO - do we need both loaded and compiled events?
+/// Sent when a script has been successfully compiled and initialized
+///
+/// An event isn't sent when a script has been reloaded while running
+/// (i.e. when LoadScript::call_setup is false).
 #[derive(Event, Default)]
 pub struct ScriptLoaded;
-
-#[derive(Event, Default)]
-pub struct ScriptCompiled;
 
 fn run_script_update(mut koto: ResMut<KotoRuntime>, time: Res<Time>) {
     if koto.is_ready {
@@ -307,7 +299,7 @@ impl KotoRuntime {
         self.is_ready
     }
 
-    fn compile_script(
+    fn initialize_script(
         &mut self,
         script: &str,
         script_path: Option<PathBuf>,

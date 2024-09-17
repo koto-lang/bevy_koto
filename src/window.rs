@@ -3,7 +3,7 @@ use bevy::{
     window::{PrimaryWindow, WindowResized},
 };
 
-use crate::runtime::{KotoRuntime, KotoRuntimePlugin, KotoSchedule, KotoUpdate, ScriptCompiled};
+use crate::runtime::{KotoRuntime, KotoRuntimePlugin, KotoSchedule, KotoUpdate, ScriptLoaded};
 
 /// Window events for bevy_koto
 ///
@@ -24,10 +24,10 @@ impl Plugin for KotoWindowPlugin {
 
 fn on_script_compiled(
     mut koto: ResMut<KotoRuntime>,
-    mut script_compiled_events: EventReader<ScriptCompiled>,
+    mut script_loaded_events: EventReader<ScriptLoaded>,
     primary_window: Query<&Window, With<PrimaryWindow>>,
 ) {
-    for _ in script_compiled_events.read() {
+    for _ in script_loaded_events.read() {
         if let Ok(window) = primary_window.get_single() {
             run_on_window_size(&mut koto, window.width(), window.height());
         } else {
