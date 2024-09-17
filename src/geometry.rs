@@ -1,6 +1,5 @@
 use crate::{
-    entity::{KotoEntityEvent, KotoEntityPlugin},
-    runtime::{make_channel, KotoReceiver, KotoRuntime, KotoRuntimePlugin, KotoSender},
+    koto_entity_channel, KotoEntityPlugin, KotoEntityReceiver, KotoRuntime, KotoRuntimePlugin,
 };
 use bevy::prelude::*;
 pub use koto_geometry::Vec2 as KotoVec2;
@@ -16,7 +15,7 @@ impl Plugin for KotoGeometryPlugin {
         debug_assert!(app.is_plugin_added::<KotoEntityPlugin>());
 
         let (update_transform_sender, update_transform_receiver) =
-            make_channel::<UpdateTransformEvent>();
+            koto_entity_channel::<UpdateTransform>();
 
         app.insert_resource(update_transform_sender)
             .insert_resource(update_transform_receiver)
@@ -30,7 +29,10 @@ fn on_startup(koto: Res<KotoRuntime>) {
         .insert("geometry", koto_geometry::make_module());
 }
 
-fn update_transform(channel: Res<UpdateTransformReceiver>, mut q: Query<&mut Transform>) {
+fn update_transform(
+    channel: Res<KotoEntityReceiver<UpdateTransform>>,
+    mut q: Query<&mut Transform>,
+) {
     while let Some(event) = channel.receive() {
         let mut transform = q.get_mut(event.entity.get()).unwrap();
         match event.event {
@@ -43,13 +45,13 @@ fn update_transform(channel: Res<UpdateTransformReceiver>, mut q: Query<&mut Tra
     }
 }
 
+/// TODO
 #[derive(Clone, Event)]
 pub enum UpdateTransform {
+    /// TODO
     Position(Vec3),
+    /// TODO
     Rotation(f32),
+    /// TODO
     Scale(Vec3),
 }
-
-pub type UpdateTransformEvent = KotoEntityEvent<UpdateTransform>;
-pub type UpdateTransformSender = KotoSender<UpdateTransformEvent>;
-type UpdateTransformReceiver = KotoReceiver<UpdateTransformEvent>;

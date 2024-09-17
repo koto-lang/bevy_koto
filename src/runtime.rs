@@ -12,6 +12,7 @@ use cloned::cloned;
 use koto::prelude::*;
 use std::{path::PathBuf, str, time::Duration};
 
+/// TODO
 #[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct KotoSchedule;
 
@@ -63,7 +64,7 @@ impl Plugin for KotoRuntimePlugin {
             order.insert_after(PreUpdate, KotoSchedule);
         }
 
-        let (add_dependency_sender, add_dependency_receiver) = make_channel::<AddDependency>();
+        let (add_dependency_sender, add_dependency_receiver) = koto_channel::<AddDependency>();
         let koto_runtime = KotoRuntime::new(add_dependency_sender.clone());
 
         // Hack to get the root path of the assets folder,
@@ -194,7 +195,7 @@ fn run_script_update(mut koto: ResMut<KotoRuntime>, time: Res<Time>) {
 fn add_script_dependencies(
     assets_folder_path: Res<AssetsFolderPath>,
     asset_server: Res<AssetServer>,
-    channel: Res<AddDependencyReceiver>,
+    channel: Res<KotoReceiver<AddDependency>>,
     mut active_script: ResMut<ActiveScript>,
 ) {
     while let Some(dependency) = channel.receive() {
@@ -268,6 +269,7 @@ impl AssetLoader for KotoScriptAssetLoader {
     }
 }
 
+/// TODO
 #[derive(Default, Resource)]
 pub struct KotoRuntime {
     runtime: Koto,
@@ -276,7 +278,7 @@ pub struct KotoRuntime {
 }
 
 impl KotoRuntime {
-    fn new(add_dependency_sender: AddDependencySender) -> Self {
+    fn new(add_dependency_sender: KotoSender<AddDependency>) -> Self {
         let runtime = Koto::with_settings(
             KotoSettings::default()
                 .with_execution_limit(Duration::from_secs(1))
@@ -295,6 +297,7 @@ impl KotoRuntime {
         }
     }
 
+    /// TODO
     pub fn is_ready(&self) -> bool {
         self.is_ready
     }
@@ -372,6 +375,7 @@ impl KotoRuntime {
         trace!("update: {:.3}ms", now.elapsed().as_secs_f64() * 1000.0)
     }
 
+    /// TODO
     pub fn run_exported_function(
         &mut self,
         function_name: &str,
@@ -390,33 +394,40 @@ impl KotoRuntime {
         }
     }
 
+    /// TODO
     pub fn prelude(&self) -> &KMap {
         self.runtime.prelude()
     }
 
+    /// TODO
     pub fn user_data(&self) -> &KValue {
         &self.user_data
     }
 }
 
-pub fn make_channel<T>() -> (KotoSender<T>, KotoReceiver<T>) {
+/// TODO
+pub fn koto_channel<T>() -> (KotoSender<T>, KotoReceiver<T>) {
     let (sender, receiver) = crossbeam_channel::unbounded();
     (KotoSender(sender), KotoReceiver(receiver))
 }
 
+/// TODO
 #[derive(Clone, Debug, Resource)]
-pub struct KotoSender<T>(crossbeam_channel::Sender<T>);
+pub struct KotoSender<T>(pub crossbeam_channel::Sender<T>);
 
 impl<T> KotoSender<T> {
+    /// TODO
     pub fn send(&self, value: T) {
         self.0.try_send(value).expect("Failed to send value")
     }
 }
 
+/// TODO
 #[derive(Clone, Debug, Resource)]
-pub struct KotoReceiver<T>(crossbeam_channel::Receiver<T>);
+pub struct KotoReceiver<T>(pub crossbeam_channel::Receiver<T>);
 
 impl<T> KotoReceiver<T> {
+    /// TODO
     pub fn receive(&self) -> Option<T> {
         self.0.try_recv().ok()
     }
@@ -424,6 +435,3 @@ impl<T> KotoReceiver<T> {
 
 #[derive(Clone, Debug)]
 struct AddDependency(PathBuf);
-
-type AddDependencySender = KotoSender<AddDependency>;
-type AddDependencyReceiver = KotoReceiver<AddDependency>;
