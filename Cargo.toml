@@ -11,6 +11,17 @@ keywords = ["scripting", "language", "koto", "bevy"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+default = ["camera", "color", "geometry", "random", "shape", "text", "window"]
+
+camera = []
+color = ["koto_color", "bevy/bevy_sprite"]
+geometry = ["koto_geometry"]
+random = ["koto_random"]
+shape = ["bevy/bevy_sprite"]
+text = ["bevy/bevy_text"]
+window = []
+
 [dependencies]
 # Multi-producer multi-consumer channels for message passing
 crossbeam-channel = "0.5"
@@ -22,14 +33,14 @@ parking_lot = "0.12"
 thiserror = "1"
 
 koto = { git = "https://github.com/koto-lang/koto" }
-koto_color = { git = "https://github.com/koto-lang/koto" }
-koto_geometry = { git = "https://github.com/koto-lang/koto" }
-koto_random = { git = "https://github.com/koto-lang/koto" }
+koto_color = { git = "https://github.com/koto-lang/koto", optional = true }
+koto_geometry = { git = "https://github.com/koto-lang/koto", optional = true }
+koto_random = { git = "https://github.com/koto-lang/koto", optional = true }
 
 [dependencies.bevy]
 version = "0.14"
 default-features = false
-features = ["bevy_asset", "bevy_core_pipeline", "bevy_sprite", "bevy_text"]
+features = ["bevy_asset", "bevy_core_pipeline"]
 
 [dev-dependencies]
 # Flexible concrete Error type built on std::error::Error
