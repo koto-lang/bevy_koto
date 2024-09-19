@@ -420,7 +420,7 @@ pub fn koto_channel<T>() -> (KotoSender<T>, KotoReceiver<T>) {
 /// A sender for events from Koto -> Bevy
 ///
 /// See [koto_channel]
-#[derive(Clone, Debug, Resource)]
+#[derive(Debug, Resource)]
 pub struct KotoSender<T>(pub crossbeam_channel::Sender<T>);
 
 impl<T> KotoSender<T> {
@@ -429,6 +429,12 @@ impl<T> KotoSender<T> {
     /// This is non-blocking, and will panic if sending fails.
     pub fn send(&self, value: T) {
         self.0.try_send(value).expect("Failed to send value")
+    }
+}
+
+impl<T> Clone for KotoSender<T> {
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
     }
 }
 
