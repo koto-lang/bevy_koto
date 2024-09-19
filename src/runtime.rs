@@ -1,3 +1,5 @@
+//! Support for adding a Koto runtime to a Bevy application
+
 use bevy::{
     app::MainScheduleOrder,
     asset::{
@@ -238,7 +240,7 @@ struct ActiveScript {
 struct AssetsFolderPath(PathBuf);
 
 #[derive(Debug, thiserror::Error)]
-pub enum KotoScriptAssetLoaderError {
+enum KotoScriptAssetLoaderError {
     #[error("Failed to load script: {0}")]
     Io(#[from] std::io::Error),
     #[error("Failed to parse script as UTF-8: {0}")]
@@ -246,7 +248,7 @@ pub enum KotoScriptAssetLoaderError {
 }
 
 #[derive(Default)]
-pub struct KotoScriptAssetLoader;
+struct KotoScriptAssetLoader;
 
 impl AssetLoader for KotoScriptAssetLoader {
     type Asset = KotoScript;

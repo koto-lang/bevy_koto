@@ -4,57 +4,24 @@
 
 #![warn(missing_docs)]
 
-mod entity;
-mod runtime;
+pub mod entity;
+pub mod prelude;
+pub mod runtime;
 
 #[cfg(feature = "camera")]
-mod camera;
+pub mod camera;
 #[cfg(feature = "color")]
-mod color;
+pub mod color;
 #[cfg(feature = "geometry")]
-mod geometry;
+pub mod geometry;
 #[cfg(feature = "random")]
-mod random;
+pub mod random;
 #[cfg(feature = "shape")]
-mod shape;
+pub mod shape;
 #[cfg(feature = "text")]
-mod text;
+pub mod text;
 #[cfg(feature = "window")]
-mod window;
-
-pub use {
-    entity::{
-        koto_entity_channel, KotoEntity, KotoEntityEvent, KotoEntityMapping, KotoEntityPlugin,
-        KotoEntityReceiver, KotoEntitySender, UpdateKotoEntity,
-    },
-    runtime::{
-        koto_channel, KotoReceiver, KotoRuntime, KotoRuntimePlugin, KotoSchedule, KotoScript,
-        KotoSender, KotoUpdate, LoadScript, ScriptLoaded,
-    },
-};
-
-#[cfg(feature = "camera")]
-pub use camera::{KotoCamera, KotoCameraPlugin, UpdateOrthographicProjection};
-
-#[cfg(feature = "color")]
-pub use color::{
-    koto_to_bevy_color, KotoColor, KotoColorPlugin, SetClearColor, UpdateColorMaterial,
-};
-
-#[cfg(feature = "geometry")]
-pub use geometry::{KotoGeometryPlugin, KotoVec2, UpdateTransform};
-
-#[cfg(feature = "random")]
-pub use random::KotoRandomPlugin;
-
-#[cfg(feature = "shape")]
-pub use shape::KotoShapePlugin;
-
-#[cfg(feature = "text")]
-pub use text::KotoTextPlugin;
-
-#[cfg(feature = "window")]
-pub use window::KotoWindowPlugin;
+pub mod window;
 
 pub use koto;
 

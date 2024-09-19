@@ -1,10 +1,12 @@
-use crate::{KotoReceiver, KotoRuntimePlugin, KotoSchedule, KotoSender, KotoUpdate, ScriptLoaded};
+//! Support for mapping Koto objects to Bevy entities
+
+use crate::prelude::*;
 use bevy::prelude::*;
 use koto::prelude::*;
 use parking_lot::RwLock;
 use std::sync::Arc;
 
-/// Support for connecting Koto and Bevy entities
+/// Support for mapping Koto objects to Bevy entities
 ///
 /// Entities with the [KotoEntity] component will be automatically despawned when the script no
 /// longer refers to them.

@@ -1,7 +1,6 @@
-use crate::{
-    koto_channel, koto_entity_channel, KotoEntityPlugin, KotoEntityReceiver, KotoReceiver,
-    KotoRuntime, KotoRuntimePlugin, KotoSchedule, KotoSender, KotoUpdate, ScriptLoaded,
-};
+//! Support for working with Bevy colors in Koto scripts
+
+use crate::prelude::*;
 use bevy::prelude::*;
 use cloned::cloned;
 use koto::prelude::*;

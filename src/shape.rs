@@ -1,9 +1,6 @@
-use crate::{
-    koto_channel, koto_to_bevy_color, KotoColor, KotoColorPlugin, KotoEntity, KotoEntityEvent,
-    KotoEntityMapping, KotoEntityPlugin, KotoEntitySender, KotoGeometryPlugin, KotoReceiver,
-    KotoRuntime, KotoRuntimePlugin, KotoSchedule, KotoSender, KotoUpdate, KotoVec2,
-    UpdateColorMaterial, UpdateKotoEntity, UpdateTransform,
-};
+//! Support for adding and updating 2D shapes in Koto scripts
+
+use crate::prelude::*;
 use bevy::{prelude::*, render::view::RenderLayers, sprite::MaterialMesh2dBundle};
 use cloned::cloned;
 use koto::{derive::*, prelude::*, runtime::Result as KotoResult};

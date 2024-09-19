@@ -1,10 +1,6 @@
+//! Text support for bevy_koto
 
-use crate::{
-    koto_channel, koto_to_bevy_color, KotoColor, KotoColorPlugin, KotoEntity, KotoEntityEvent,
-    KotoEntityMapping, KotoEntityPlugin, KotoEntitySender, KotoGeometryPlugin, KotoReceiver,
-    KotoRuntime, KotoRuntimePlugin, KotoSchedule, KotoSender, KotoUpdate, KotoVec2,
-    UpdateColorMaterial, UpdateKotoEntity, UpdateTransform,
-};
+use crate::prelude::*;
 use bevy::prelude::*;
 use cloned::cloned;
 use koto::{derive::*, prelude::*, runtime::Result as KotoResult};

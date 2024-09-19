@@ -1,10 +1,10 @@
-use crate::{
-    koto_entity_channel, KotoEntityPlugin, KotoEntityReceiver, KotoRuntime, KotoRuntimePlugin,
-};
+//! 2D geometry utilities for Koto
+
+use crate::prelude::*;
 use bevy::prelude::*;
 pub use koto_geometry::Vec2 as KotoVec2;
 
-/// 2d Geometry utilities for Koto
+/// 2D geometry utilities for Koto
 ///
 /// The plugin adds the `geometry` module from `koto_geometry` to Koto's prelude.
 pub struct KotoGeometryPlugin;

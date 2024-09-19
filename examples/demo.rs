@@ -5,7 +5,7 @@ use bevy::{
     asset::LoadedFolder, diagnostic::FrameTimeDiagnosticsPlugin, ecs::schedule::ExecutorKind,
     prelude::*,
 };
-use bevy_koto::*;
+use bevy_koto::prelude::*;
 use clap::Parser;
 
 #[derive(Parser)]

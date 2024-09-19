@@ -1,4 +1,6 @@
-use crate::{KotoRuntime, KotoRuntimePlugin, KotoSchedule, KotoUpdate, ScriptLoaded};
+//! Window events for bevy_koto
+
+use crate::prelude::*;
 use bevy::{
     prelude::*,
     window::{PrimaryWindow, WindowResized},

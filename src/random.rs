@@ -1,3 +1,5 @@
+//! Random number utilities for Koto scripts
+
 use crate::runtime::{KotoRuntime, KotoRuntimePlugin};
 use bevy::prelude::*;
 

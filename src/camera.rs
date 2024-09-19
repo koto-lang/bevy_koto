@@ -1,7 +1,6 @@
-use crate::{
-    koto_channel, KotoReceiver, KotoRuntime, KotoRuntimePlugin, KotoSchedule, KotoSender,
-    KotoUpdate, ScriptLoaded,
-};
+//! Support for modifying properties of a Bevy camera
+
+use crate::prelude::*;
 use bevy::{prelude::*, render::camera::ScalingMode, window::WindowResized};
 use cloned::cloned;
 use koto::prelude::*;
