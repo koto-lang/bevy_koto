@@ -52,7 +52,9 @@ fn on_startup(koto: Res<KotoRuntime>, set_clear_color: Res<KotoSender<SetClearCo
                 [Number(n1), Number(n2), Number(n3), Number(n4)] => {
                     Color::srgba(f32::from(n1), f32::from(n2), f32::from(n3), f32::from(n4))
                 }
-                [Object(o)] if o.is_a::<KotoColor>() => koto_to_bevy_color(*o.cast::<KotoColor>()?),
+                [Object(o)] if o.is_a::<KotoColor>() => {
+                    koto_to_bevy_color(&*o.cast::<KotoColor>()?)
+                }
                 unexpected => return unexpected_args("three or four Numbers", unexpected),
             };
 
@@ -84,7 +86,7 @@ fn set_clear_color(channel: Res<KotoReceiver<SetClearColor>>, mut clear_color: R
 pub struct SetClearColor(Color);
 
 /// A function that converts a Koto color into a Bevy color
-pub fn koto_to_bevy_color(c: KotoColor) -> Color {
+pub fn koto_to_bevy_color(c: &KotoColor) -> Color {
     let c = c.inner();
     Color::srgba(c.red, c.green, c.blue, c.alpha)
 }

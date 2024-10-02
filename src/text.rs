@@ -138,7 +138,7 @@ impl KotoText {
             [Number(n1), Number(n2), Number(n3), Number(n4)] => {
                 Color::srgba(f32::from(n1), f32::from(n2), f32::from(n3), f32::from(n4))
             }
-            [Object(o)] if o.is_a::<KotoColor>() => koto_to_bevy_color(*o.cast::<KotoColor>()?),
+            [Object(o)] if o.is_a::<KotoColor>() => koto_to_bevy_color(&*o.cast::<KotoColor>()?),
             _ => {
                 return runtime_error!("Shape.set_color: Expected a Color, or 3 or 4 numbers");
             }
