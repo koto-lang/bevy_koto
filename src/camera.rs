@@ -87,8 +87,12 @@ fn on_window_resized(
 
 fn get_scaling_mode(width: f32, height: f32) -> ScalingMode {
     if width > height {
-        ScalingMode::FixedVertical(2.0)
+        ScalingMode::FixedVertical {
+            viewport_height: 2.0,
+        }
     } else {
-        ScalingMode::FixedHorizontal(2.0)
+        ScalingMode::FixedHorizontal {
+            viewport_width: 2.0,
+        }
     }
 }

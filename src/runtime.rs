@@ -4,7 +4,7 @@ use bevy::{
     app::MainScheduleOrder,
     asset::{
         io::{file::FileAssetReader, Reader},
-        AssetLoader, AsyncReadExt, LoadContext,
+        AssetLoader, LoadContext,
     },
     ecs::schedule::ScheduleLabel,
     prelude::*,
@@ -194,7 +194,7 @@ pub struct ScriptLoaded;
 
 fn run_script_update(mut koto: ResMut<KotoRuntime>, time: Res<Time>) {
     if koto.is_ready {
-        koto.run_update(time.delta_seconds_f64());
+        koto.run_update(time.delta_secs_f64());
     }
 }
 
@@ -255,11 +255,11 @@ impl AssetLoader for KotoScriptAssetLoader {
     type Settings = ();
     type Error = KotoScriptAssetLoaderError;
 
-    async fn load<'a>(
-        &'a self,
-        reader: &'a mut Reader<'_>,
-        _settings: &'a (),
-        load_context: &'a mut LoadContext<'_>,
+    async fn load(
+        &self,
+        reader: &mut dyn Reader,
+        _settings: &(),
+        load_context: &mut LoadContext<'_>,
     ) -> Result<Self::Asset, Self::Error> {
         let mut bytes = Vec::new();
         reader.read_to_end(&mut bytes).await?;
@@ -318,13 +318,15 @@ impl KotoRuntime {
 
         self.is_ready = false;
 
-        if let Err(error) = self.runtime.set_script_path(script_path) {
-            error!("Error while setting script path:\n{error}");
-            return Err(());
-        }
-
         self.runtime.clear_module_cache();
-        if let Err(error) = self.runtime.compile(script) {
+        let compile_args = CompileArgs {
+            script,
+            script_path: script_path
+                .and_then(|path| path.to_str())
+                .map(|path| KString::from(path)),
+            compiler_settings: default(),
+        };
+        if let Err(error) = self.runtime.compile(compile_args) {
             error!("Error while compiling script:\n{error}");
             return Err(());
         }

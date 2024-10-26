@@ -86,14 +86,25 @@ fn set_clear_color(channel: Res<KotoReceiver<SetClearColor>>, mut clear_color: R
 pub struct SetClearColor(Color);
 
 /// A function that converts a Koto color into a Bevy color
-pub fn koto_to_bevy_color(c: &KotoColor) -> Color {
-    let c = c.inner();
-    Color::srgba(c.red, c.green, c.blue, c.alpha)
+pub fn koto_to_bevy_color(koto_color: &KotoColor) -> Color {
+    match koto_color.color {
+        koto_color::Encoding::Srgb(c) => Color::srgba(c.red, c.green, c.blue, koto_color.alpha),
+        koto_color::Encoding::Hsl(c) => {
+            Color::hsla(c.hue.into(), c.saturation, c.lightness, koto_color.alpha)
+        }
+        koto_color::Encoding::Hsv(c) => {
+            Color::hsva(c.hue.into(), c.saturation, c.value, koto_color.alpha)
+        }
+        koto_color::Encoding::Oklab(c) => Color::oklaba(c.l, c.a, c.b, koto_color.alpha),
+        koto_color::Encoding::Oklch(c) => {
+            Color::oklcha(c.l, c.chroma, c.hue.into(), koto_color.alpha)
+        }
+    }
 }
 
 fn koto_to_bevy_color_material_events(
     channel: Res<KotoEntityReceiver<UpdateColorMaterial>>,
-    query: Query<&Handle<ColorMaterial>>,
+    query: Query<&MeshMaterial2d<ColorMaterial>>,
     asset_server: Res<AssetServer>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {

@@ -32,15 +32,15 @@ parking_lot = "0.12"
 # derive(Error)
 thiserror = "1"
 
-koto = { git = "https://github.com/koto-lang/koto" }
+koto = { git = "https://github.com/koto-lang/koto", default-features = false, features = ["arc"]}
 koto_color = { git = "https://github.com/koto-lang/koto", optional = true }
 koto_geometry = { git = "https://github.com/koto-lang/koto", optional = true }
-koto_random = { git = "https://github.com/koto-lang/koto", optional = true }
+koto_random = { git = "https://github.com/koto-lang/koto", optional = true, default-features = false }
 
 [dependencies.bevy]
-version = "0.14"
+version = "0.15"
 default-features = false
-features = ["bevy_asset", "bevy_core_pipeline"]
+features = ["bevy_asset", "bevy_core_pipeline", "bevy_window"]
 
 [dev-dependencies]
 # Flexible concrete Error type built on std::error::Error
@@ -49,7 +49,7 @@ anyhow = "1.0.82"
 clap = { version = "4.5.4", features = ["derive"] }
 
 [dev-dependencies.bevy]
-version = "0.14"
+version = "0.15"
 default-features = false
 features = [
   "bevy_asset",
@@ -60,6 +60,7 @@ features = [
   "bevy_state",
   "bevy_text",
   "bevy_ui",
+  "bevy_window",
   "bevy_winit",
   "default_font",
   "png",

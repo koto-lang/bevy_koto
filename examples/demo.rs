@@ -89,9 +89,7 @@ enum AppState {
 }
 
 fn setup(asset_server: Res<AssetServer>, mut commands: Commands) {
-    commands
-        .spawn(Camera2dBundle { ..default() })
-        .insert(KotoCamera);
+    commands.spawn(Camera2d::default()).insert(KotoCamera);
 
     commands.insert_resource(ScriptLoader {
         script_folder: asset_server.load_folder("scripts"),

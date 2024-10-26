@@ -1,7 +1,7 @@
 //! Support for adding and updating 2D shapes in Koto scripts
 
 use crate::prelude::*;
-use bevy::{prelude::*, render::view::RenderLayers, sprite::MaterialMesh2dBundle};
+use bevy::{prelude::*, render::view::RenderLayers};
 use cloned::cloned;
 use koto::{derive::*, prelude::*, runtime::Result as KotoResult};
 
@@ -9,8 +9,6 @@ use koto::{derive::*, prelude::*, runtime::Result as KotoResult};
 ///
 /// The plugin adds a `shape` module to the Koto prelude.
 /// The currently available shapes are `circle`, `square`, and `polygon`.
-///
-/// Shapes get spawned as a [MaterialMesh2dBundle] with a [ColorMaterial].
 pub struct KotoShapePlugin;
 
 impl Plugin for KotoShapePlugin {
@@ -107,11 +105,12 @@ fn spawn_shapes(
 
         let bevy_entity = commands
             .spawn((
-                MaterialMesh2dBundle {
-                    mesh: meshes.add(mesh).into(),
-                    material: materials.add(ColorMaterial::from(Color::WHITE)),
-                    ..default()
-                },
+                Mesh2d(meshes.add(mesh)),
+                MeshMaterial2d(materials.add(ColorMaterial {
+                    color: Color::WHITE,
+                    alpha_mode: bevy::sprite::AlphaMode2d::Blend,
+                    texture: None,
+                })),
                 RenderLayers::layer(0),
                 koto_entity.clone(),
             ))
@@ -130,7 +129,7 @@ struct SpawnShape {
 enum Shape {
     Rect(f32, f32),
     Circle,
-    Polygon(usize),
+    Polygon(u32),
 }
 
 #[derive(Clone, KotoType, KotoCopy)]

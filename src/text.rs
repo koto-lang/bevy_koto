@@ -74,17 +74,9 @@ fn spawn_text(channel: Res<KotoReceiver<SpawnText>>, mut commands: Commands) {
         debug!("Spawning text '{text}'");
         let bevy_entity = commands
             .spawn((
-                Text2dBundle {
-                    text: Text::from_section(
-                        text,
-                        TextStyle {
-                            font_size: 100.0,
-                            ..Default::default()
-                        },
-                    )
-                    .with_justify(JustifyText::Center),
-                    ..default()
-                },
+                Text2d::new(text),
+                TextFont::from_font_size(100.0),
+                TextLayout::new_with_justify(JustifyText::Center),
                 koto_entity.clone(),
             ))
             .id();

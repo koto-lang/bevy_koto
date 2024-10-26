@@ -7,7 +7,7 @@ palette_meta =
   # The number of colors in the palette
   @size: || size self.colors
 
-  @meta last_index: || (size self.colors)- 1
+  @meta last_index: || (size self.colors) - 1
 
   # Picks a color from the palette at random
   @meta pick: || pick self.colors
@@ -29,14 +29,13 @@ export make_palette = |colors...|
   result = {colors: colors.to_tuple()}
   result.with_meta palette_meta
 
-@tests =
-  @test palette_fade: ||
-    red = color 1, 0, 0
-    green = color 0, 1, 0
-    blue = color 0, 0, 1
-    p = make_palette red, green, blue
-    assert_eq p.fade(0), red
-    assert_eq p.fade(0.5), green
-    assert_eq p.fade(1), blue
-    assert_eq p.fade(0.25), color(0.5, 0.5, 0)
-    assert_eq p.fade(0.75), color(0.0, 0.5, 0.5)
+@test palette_fade = ||
+  red = color 1, 0, 0
+  green = color 0, 1, 0
+  blue = color 0, 0, 1
+  p = make_palette red, green, blue
+  assert_eq p.fade(0), red
+  assert_eq p.fade(0.5), green
+  assert_eq p.fade(1), blue
+  assert_eq p.fade(0.25), color(0.5, 0.5, 0)
+  assert_eq p.fade(0.75), color(0.0, 0.5, 0.5)

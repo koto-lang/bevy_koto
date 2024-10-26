@@ -53,7 +53,7 @@ fn update_koto_entities(
     mut query: Query<&mut KotoEntity>,
     mut commands: Commands,
 ) {
-    let time_delta = time.delta_seconds_f64();
+    let time_delta = time.delta_secs_f64();
 
     for koto_entity in &query {
         // If ref_count is 1 then the Koto script is no longer referencing the entity,

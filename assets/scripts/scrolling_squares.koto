@@ -15,7 +15,7 @@ palette = palette.make_palette
   (rgb 0.39, 0.95, 0.31),
   (rgb 0.19, 0.29, 0.99),
 
-background_color = hsv 100, 0.1, 0.8 
+background_color = hsv 100, 0.1, 0.8
 
 screen_bound = 1.2
 max_shape_count = 50
@@ -33,9 +33,7 @@ random_color = |time|
   x = random_lerp 0.24, 0.99
   scene = (time * scene_rate % scene_count).floor()
   offset = (random_number() - 0.5) * color_variation
-  palette
-    .get scene + offset
-    .set_alpha 0.9
+  palette.get(scene + offset).set_alpha 0.9
 
 spawn_rect = |time, id|
   position =
@@ -43,7 +41,7 @@ spawn_rect = |time, id|
   velocity =
     vec2 (random_lerp -speed_max, speed_max), (random_lerp -speed_max, speed_max)
   shape_size = random_lerp 0.2, 0.6
-  color = ((random_color time) * 2).set_a 0
+  color = (random_color time).set_alpha 0
   target_alpha = random_lerp alpha_min, alpha_max
   rotation = if random_bool() then pi_4 else 0
 
@@ -60,11 +58,11 @@ spawn_rect = |time, id|
       x, y = this.position
       if x.abs() > screen_bound or y.abs() > screen_bound
         this.target_alpha = 0.0 # Fade the shape out before it gets removed
-      a = this.color.a()
+      a = this.color.alpha()
       if a < this.target_alpha
-        this.color.set_a (a + fade_duration * time_delta).min this.target_alpha
+        this.color.set_alpha (a + fade_duration * time_delta).min this.target_alpha
       else if a > this.target_alpha
-        this.color.set_a (a - fade_duration * time_delta).max this.target_alpha
+        this.color.set_alpha (a - fade_duration * time_delta).max this.target_alpha
       else if this.target_alpha == 0
         this.is_active = false
       self.set_color this.color

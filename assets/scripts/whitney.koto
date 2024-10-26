@@ -22,10 +22,9 @@ palette = make_palette
 
 shape_color = |x, time|
   t = time * 0.6
-  result =
-    palette
-      .fade ((x * t).sin() * 0.5 + 0.5)
-      .set_alpha 0.8
+  palette
+    .fade ((x * t).sin() * 0.5 + 0.5)
+    .set_alpha 0.8
 
 shape_size = |x| 
   lerp 0.3, 0.1, x
