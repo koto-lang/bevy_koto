@@ -24,7 +24,6 @@ palette_meta =
   @meta fade: |x|
     self.get x * self.last_index()
 
-
 export make_palette = |colors...|
   result = {colors: colors.to_tuple()}
   result.with_meta palette_meta
