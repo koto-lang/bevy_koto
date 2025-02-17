@@ -1,10 +1,7 @@
 use std::path::Path;
 
 use anyhow::Result;
-use bevy::{
-    asset::LoadedFolder, diagnostic::FrameTimeDiagnosticsPlugin, ecs::schedule::ExecutorKind,
-    prelude::*,
-};
+use bevy::{asset::LoadedFolder, diagnostic::FrameTimeDiagnosticsPlugin, prelude::*};
 use bevy_koto::prelude::*;
 use clap::Parser;
 
@@ -37,10 +34,6 @@ Press R to reload the current script.
     );
 
     App::new()
-        .edit_schedule(Main, |schedule| {
-            schedule.set_executor_kind(ExecutorKind::MultiThreaded);
-        })
-        // .insert_resource(KotoScriptFolder::new(&assets_dir, Some(&args.script)))
         .add_plugins((
             DefaultPlugins
                 .set(WindowPlugin {

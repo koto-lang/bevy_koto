@@ -2,10 +2,7 @@
 
 use bevy::{
     app::MainScheduleOrder,
-    asset::{
-        io::{file::FileAssetReader, Reader},
-        AssetLoader, LoadContext,
-    },
+    asset::{io::Reader, AssetLoader, LoadContext},
     ecs::schedule::ScheduleLabel,
     prelude::*,
     reflect::TypePath,
@@ -73,15 +70,20 @@ impl Plugin for KotoRuntimePlugin {
         let (add_dependency_sender, add_dependency_receiver) = koto_channel::<AddDependency>();
         let koto_runtime = KotoRuntime::new(add_dependency_sender.clone());
 
-        // Hack to get the root path of the assets folder,
-        // see https://github.com/bevyengine/bevy/issues/10455
-        let assets_folder_path = FileAssetReader::get_base_path().join("assets");
+        let Some(assets_root_path) = app
+            .get_added_plugins::<AssetPlugin>()
+            .last()
+            .map(|plugin| PathBuf::from(&plugin.file_path))
+        else {
+            error!("AssetPlugin must be initialized before KotoRuntimePlugin");
+            return;
+        };
 
         app.insert_resource(koto_runtime)
             .insert_resource(add_dependency_sender)
             .insert_resource(add_dependency_receiver)
             .insert_resource(ActiveScript::default())
-            .insert_resource(AssetsFolderPath(assets_folder_path))
+            .insert_resource(AssetsRootPath(assets_root_path))
             .add_event::<LoadScript>()
             .add_event::<ScriptLoaded>()
             .init_asset::<KotoScript>()
@@ -130,7 +132,7 @@ fn process_script_asset_events(
 }
 
 fn process_load_script_events(
-    assets_folder: Res<AssetsFolderPath>,
+    assets_root_path: Res<AssetsRootPath>,
     assets: Res<Assets<KotoScript>>,
     mut load_script_events: EventReader<LoadScript>,
     mut script_loaded: EventWriter<ScriptLoaded>,
@@ -145,7 +147,7 @@ fn process_load_script_events(
 
         info!("Loading {}", script.path.to_string_lossy());
 
-        let script_path = assets_folder.0.join(&script.path);
+        let script_path = assets_root_path.0.join(&script.path);
         if koto
             .initialize_script(&script.script, Some(&script_path), event.call_setup)
             .is_ok()
@@ -199,18 +201,18 @@ fn run_script_update(mut koto: ResMut<KotoRuntime>, time: Res<Time>) {
 }
 
 fn add_script_dependencies(
-    assets_folder_path: Res<AssetsFolderPath>,
+    assets_root_path: Res<AssetsRootPath>,
     asset_server: Res<AssetServer>,
     channel: Res<KotoReceiver<AddDependency>>,
     mut active_script: ResMut<ActiveScript>,
 ) {
     while let Some(dependency) = channel.receive() {
-        if let Ok(path_in_assets) = dependency.0.strip_prefix(&assets_folder_path.0) {
+        if let Ok(path_in_assets) = dependency.0.strip_prefix(&assets_root_path.0) {
             let handle = asset_server.load(path_in_assets.to_owned());
             active_script.dependencies.push(handle);
         } else {
             error!(
-                "Unable to find path in assets folder for {}",
+                "Unable to find path in assets for {}",
                 dependency.0.to_string_lossy()
             );
         }
@@ -237,7 +239,7 @@ struct ActiveScript {
 }
 
 #[derive(Default, Resource)]
-struct AssetsFolderPath(PathBuf);
+struct AssetsRootPath(PathBuf);
 
 #[derive(Debug, thiserror::Error)]
 enum KotoScriptAssetLoaderError {
