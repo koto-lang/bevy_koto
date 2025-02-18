@@ -10,6 +10,7 @@ pub use koto_color::Color as KotoColor;
 ///
 /// The plugin adds the `color` module from `koto_color` to Koto's prelude,
 /// along with a `set_clear_color` function.
+#[derive(Default)]
 pub struct KotoColorPlugin;
 
 impl Plugin for KotoColorPlugin {

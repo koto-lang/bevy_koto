@@ -9,6 +9,7 @@ use koto::{derive::*, prelude::*, runtime::Result as KotoResult};
 ///
 /// This plugin is currently underbaked (appropriate font sizing needs to be figured out),
 /// but it's a start.
+#[derive(Default)]
 pub struct KotoTextPlugin;
 
 impl Plugin for KotoTextPlugin {

@@ -49,17 +49,7 @@ Press R to reload the current script.
                     ..Default::default()
                 }),
             FrameTimeDiagnosticsPlugin,
-        ))
-        .add_plugins((
-            KotoRuntimePlugin,
-            KotoEntityPlugin,
-            KotoCameraPlugin,
-            KotoWindowPlugin,
-            KotoColorPlugin,
-            KotoGeometryPlugin,
-            KotoRandomPlugin,
-            KotoShapePlugin,
-            KotoTextPlugin,
+            KotoPlugins,
         ))
         .init_state::<AppState>()
         .add_systems(OnEnter(AppState::Setup), setup)

@@ -10,6 +10,7 @@ use bevy::{
 ///
 /// The plugin currently only detects window resize events, and then calls the script's
 /// exported `on_window_size` function (if it exists).
+#[derive(Default)]
 pub struct KotoWindowPlugin;
 
 impl Plugin for KotoWindowPlugin {

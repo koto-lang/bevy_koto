@@ -47,6 +47,7 @@ pub enum KotoUpdate {
 /// The following events are also added by the plugin:
 /// - [LoadScript]: Sent to load a new script
 /// - [ScriptLoaded]: Sent after a script has been successfully loaded and initialized.
+#[derive(Default)]
 pub struct KotoRuntimePlugin;
 
 impl Plugin for KotoRuntimePlugin {

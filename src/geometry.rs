@@ -7,6 +7,7 @@ pub use koto_geometry::Vec2 as KotoVec2;
 /// 2D geometry utilities for Koto
 ///
 /// The plugin adds the `geometry` module from `koto_geometry` to Koto's prelude.
+#[derive(Default)]
 pub struct KotoGeometryPlugin;
 
 impl Plugin for KotoGeometryPlugin {

@@ -4,6 +4,7 @@ pub use crate::entity::{
     koto_entity_channel, KotoEntity, KotoEntityEvent, KotoEntityMapping, KotoEntityPlugin,
     KotoEntityReceiver, KotoEntitySender, UpdateKotoEntity,
 };
+pub use crate::koto_plugins::KotoPlugins;
 pub use crate::runtime::{
     koto_channel, KotoReceiver, KotoRuntime, KotoRuntimePlugin, KotoSchedule, KotoScript,
     KotoSender, KotoUpdate, LoadScript, ScriptLoaded,

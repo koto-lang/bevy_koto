@@ -8,6 +8,7 @@ use koto::prelude::*;
 /// Exposes a `set_zoom` function to Koto that modifies the zoom of a 2D camera
 ///
 /// The camera needs to have the [KotoCamera] component attached to it for the
+#[derive(Default)]
 pub struct KotoCameraPlugin;
 
 impl Plugin for KotoCameraPlugin {
