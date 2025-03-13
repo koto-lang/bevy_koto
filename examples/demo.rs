@@ -138,6 +138,7 @@ fn process_keypresses(
     input: Res<ButtonInput<KeyCode>>,
     mut load_script_events: EventWriter<LoadScript>,
     mut script_loader: ResMut<ScriptLoader>,
+    mut time: ResMut<Time<Virtual>>,
 ) {
     if input.just_pressed(KeyCode::Tab) {
         if input.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight]) {
@@ -147,6 +148,12 @@ fn process_keypresses(
         }
     } else if input.just_pressed(KeyCode::KeyR) {
         script_loader.reload_script(&mut load_script_events);
+    } else if input.just_pressed(KeyCode::Space) {
+        if time.is_paused() {
+            time.unpause();
+        } else {
+            time.pause();
+        }
     }
 }
 

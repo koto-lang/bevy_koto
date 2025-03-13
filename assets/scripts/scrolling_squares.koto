@@ -78,8 +78,8 @@ export
     # state.rects = []
     set_clear_color background_color
 
-  update: |state, time_delta|
-    state.time += time_delta
+  update: |state, time|
+    state.time = time.elapsed()
     # Remove rects that have gone out of bounds
     state.rects.retain |rect| rect.state().is_active
     # Make new rects to replace ones that have been removed

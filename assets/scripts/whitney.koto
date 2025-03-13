@@ -60,6 +60,6 @@ export
       .each |i| make_shape state, i
       .to_tuple()
 
-  update: |state, time_delta|
-    state.time += time_delta
+  update: |state, time|
+    state.time = time.elapsed()
     set_zoom mod_sin state.time, 0.1, 0.9, 1.1
