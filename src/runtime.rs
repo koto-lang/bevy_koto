@@ -2,7 +2,10 @@
 
 use bevy::{
     app::MainScheduleOrder,
-    asset::{io::Reader, AssetLoader, LoadContext},
+    asset::{
+        io::{file::FileAssetReader, Reader},
+        AssetLoader, LoadContext,
+    },
     ecs::schedule::ScheduleLabel,
     prelude::*,
     reflect::TypePath,
@@ -71,30 +74,23 @@ impl Plugin for KotoRuntimePlugin {
         let (add_dependency_sender, add_dependency_receiver) = koto_channel::<AddDependency>();
         let koto_runtime = KotoRuntime::new(add_dependency_sender.clone());
 
-        let assets_root_path = {
+        let mut assets_path = FileAssetReader::get_base_path();
+        let assets_folder_name = {
             let asset_plugins = app.get_added_plugins::<AssetPlugin>();
             let Some(assets_plugin) = asset_plugins.last() else {
                 error!("AssetPlugin must be initialized before KotoRuntimePlugin");
                 return;
             };
-
-            match PathBuf::from(&assets_plugin.file_path).canonicalize() {
-                Ok(result) => result,
-                Err(error) => {
-                    error!(
-                        "Failed to canonicalize assets path '{}' ({error})",
-                        assets_plugin.file_path
-                    );
-                    return;
-                }
-            }
+            PathBuf::from(&assets_plugin.file_path)
         };
+        assets_path.push(assets_folder_name);
+        debug!("Assets path: {}", assets_path.to_string_lossy());
 
         app.insert_resource(koto_runtime)
             .insert_resource(add_dependency_sender)
             .insert_resource(add_dependency_receiver)
             .insert_resource(ActiveScript::default())
-            .insert_resource(AssetsRootPath(assets_root_path))
+            .insert_resource(AssetsRootPath(assets_path))
             .insert_resource(KotoTime::default())
             .add_event::<LoadScript>()
             .add_event::<ScriptLoaded>()
