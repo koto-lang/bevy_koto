@@ -351,16 +351,19 @@ impl KotoRuntime {
                 .map(|path| KString::from(path)),
             compiler_settings: default(),
         };
-        if let Err(error) = self.runtime.compile(compile_args) {
-            error!("Error while compiling script:\n{error}");
-            return Err(());
-        }
+        let chunk = match self.runtime.compile(compile_args) {
+            Ok(chunk) => chunk,
+            Err(error) => {
+                error!("Error while compiling script:\n{error}");
+                return Err(());
+            }
+        };
 
         if call_setup {
             self.runtime.exports_mut().clear();
         }
 
-        if let Err(e) = self.runtime.run() {
+        if let Err(e) = self.runtime.run(chunk) {
             error!("Error while running Koto script:\n{e}");
             return Err(());
         }
@@ -421,7 +424,7 @@ impl KotoRuntime {
         function_name: &str,
         args: &[KValue],
     ) -> Result<Option<KValue>, koto::Error> {
-        let Some(function) = self.runtime.exports().data().get(function_name).cloned() else {
+        let Some(function) = self.runtime.exports().get(function_name) else {
             return Ok(None);
         };
 
