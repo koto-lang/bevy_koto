@@ -135,7 +135,7 @@ fn process_script_asset_events(
                     .iter()
                     .any(|handle| id == handle.id())
             {
-                load_script.send(LoadScript::reload(script.clone()));
+                load_script.write(LoadScript::reload(script.clone()));
             }
         }
     }
@@ -165,7 +165,7 @@ fn process_load_script_events(
         {
             if event.reset {
                 koto_timer.reset();
-                script_loaded.send_default();
+                script_loaded.write_default();
             }
 
             active_script.script = Some(event.script.clone());

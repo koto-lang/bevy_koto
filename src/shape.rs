@@ -110,6 +110,7 @@ fn spawn_shapes(
                 MeshMaterial2d(materials.add(ColorMaterial {
                     color: Color::WHITE,
                     alpha_mode: bevy::sprite::AlphaMode2d::Blend,
+                    uv_transform: default(),
                     texture: None,
                 })),
                 RenderLayers::layer(0),

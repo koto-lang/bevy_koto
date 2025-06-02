@@ -48,7 +48,7 @@ Press R to reload the current script.
                     watch_for_changes_override: Some(true),
                     ..Default::default()
                 }),
-            FrameTimeDiagnosticsPlugin,
+            FrameTimeDiagnosticsPlugin::default(),
             KotoPlugins,
         ))
         .init_state::<AppState>()
@@ -60,6 +60,8 @@ Press R to reload the current script.
         .add_systems(OnEnter(AppState::Ready), ready)
         .add_systems(Update, process_keypresses.run_if(in_state(AppState::Ready)))
         .run();
+
+    println!("Exiting");
 
     Ok(())
 }
@@ -191,7 +193,7 @@ impl ScriptLoader {
 
     fn load_script(&mut self, index: usize, load_script_events: &mut EventWriter<LoadScript>) {
         if let Some(script) = self.scripts.get(index) {
-            load_script_events.send(LoadScript::load(script.clone()));
+            load_script_events.write(LoadScript::load(script.clone()));
             self.current_script = Some(index);
         }
     }

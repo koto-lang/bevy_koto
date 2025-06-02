@@ -32,15 +32,17 @@ parking_lot = "0.12"
 # derive(Error)
 thiserror = "1"
 
-koto = { git = "https://github.com/koto-lang/koto", default-features = false, features = ["arc"]}
-koto_color = { git = "https://github.com/koto-lang/koto", default-features = false, optional = true  }
-koto_geometry = { git = "https://github.com/koto-lang/koto", default-features = false, optional = true  }
+koto = { git = "https://github.com/koto-lang/koto", default-features = false, features = [
+  "arc",
+] }
+koto_color = { git = "https://github.com/koto-lang/koto", default-features = false, optional = true }
+koto_geometry = { git = "https://github.com/koto-lang/koto", default-features = false, optional = true }
 koto_random = { git = "https://github.com/koto-lang/koto", default-features = false, optional = true }
 
 [dependencies.bevy]
-version = "0.15"
+version = "0.16"
 default-features = false
-features = ["bevy_asset", "bevy_core_pipeline", "bevy_window"]
+features = ["bevy_asset", "bevy_core_pipeline", "bevy_log", "bevy_window"]
 
 [dev-dependencies]
 # Flexible concrete Error type built on std::error::Error
@@ -49,11 +51,12 @@ anyhow = "1.0.82"
 clap = { version = "4.5.4", features = ["derive"] }
 
 [dev-dependencies.bevy]
-version = "0.15"
+version = "0.16"
 default-features = false
 features = [
   "bevy_asset",
   "bevy_core_pipeline",
+  "bevy_dev_tools",
   "bevy_gilrs",
   "bevy_render",
   "bevy_sprite",
