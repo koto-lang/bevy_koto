@@ -18,7 +18,7 @@ palette = make_palette
   hsv(30, 0.72, 0.99),
   hsv(116, 0.21, 0.90),
   hsv(58, 0.39, 0.99),
-  hsv(0, 0.45, 0.94),
+  hsv(0, 0.45, 0.94)
 
 shape_color = |x, time|
   t = time * 0.6
@@ -26,7 +26,7 @@ shape_color = |x, time|
     .fade ((x * t).sin() * 0.5 + 0.5)
     .set_alpha 0.8
 
-shape_size = |x| 
+shape_size = |x|
   lerp 0.3, 0.1, x
 
 shape_position = |x, time|
@@ -39,14 +39,14 @@ make_shape = |state, i|
   initial_time = state.time
   shape.circle()
     .set_size shape_size x
-    .set_position (shape_position x, initial_time), i
+    .set_position shape_position(x, initial_time), i
     .set_color shape_color x, initial_time
     .set_rotation pi_4
     .on_update |time_delta|
       time = state.time
       self
-        .set_position (shape_position x, time), i 
-        .set_color shape_color x, time 
+        .set_position shape_position(x, time), i
+        .set_color shape_color x, time
 
 export
   setup: ||
@@ -60,6 +60,6 @@ export
       .each |i| make_shape state, i
       .to_tuple()
 
-  update: |state, time_delta|
-    state.time += time_delta
+  update: |state, time|
+    state.time = time.elapsed()
     set_zoom mod_sin state.time, 0.1, 0.9, 1.1

@@ -8,6 +8,7 @@ use koto::prelude::*;
 /// Exposes a `set_zoom` function to Koto that modifies the zoom of a 2D camera
 ///
 /// The camera needs to have the [KotoCamera] component attached to it for the
+#[derive(Default)]
 pub struct KotoCameraPlugin;
 
 impl Plugin for KotoCameraPlugin {
@@ -21,7 +22,7 @@ impl Plugin for KotoCameraPlugin {
             .insert_resource(update_ortho_projection_receiver)
             .add_systems(Startup, on_startup)
             .add_systems(KotoSchedule, on_script_loaded.in_set(KotoUpdate::PreUpdate))
-            .add_systems(Update, (on_window_resized, update_orthographic_projection));
+            .add_systems(Update, (on_window_resized, update_projection));
     }
 }
 
@@ -55,34 +56,50 @@ fn on_startup(
 // Reset the camera's projection when a script is loaded
 fn on_script_loaded(
     mut script_loaded_events: EventReader<ScriptLoaded>,
-    mut camera_query: Query<&mut OrthographicProjection, With<KotoCamera>>,
-) {
+    mut camera_query: Query<&mut Projection, With<KotoCamera>>,
+) -> Result {
     for _ in script_loaded_events.read() {
-        let mut camera = camera_query.single_mut();
-        camera.scale = 1.0;
-    }
-}
-
-fn update_orthographic_projection(
-    channel: Res<KotoReceiver<UpdateOrthographicProjection>>,
-    mut camera_query: Query<&mut OrthographicProjection, With<KotoCamera>>,
-) {
-    let mut camera = camera_query.single_mut();
-    while let Some(event) = channel.receive() {
-        match event {
-            UpdateOrthographicProjection::Scale(scale) => camera.scale = scale,
+        match camera_query.single_mut()?.as_mut() {
+            Projection::Orthographic(projection) => projection.scale = 1.0,
+            _ => return Err("Expected an orthographic projection".into()),
         }
     }
+
+    Ok(())
+}
+
+fn update_projection(
+    channel: Res<KotoReceiver<UpdateOrthographicProjection>>,
+    mut camera_query: Query<&mut Projection, With<KotoCamera>>,
+) -> Result {
+    match camera_query.single_mut()?.as_mut() {
+        Projection::Orthographic(projection) => {
+            while let Some(event) = channel.receive() {
+                match event {
+                    UpdateOrthographicProjection::Scale(scale) => projection.scale = scale,
+                }
+            }
+        }
+        _ => return Err("Expected an orthographic projection".into()),
+    }
+
+    Ok(())
 }
 
 fn on_window_resized(
     mut window_resized_events: EventReader<WindowResized>,
-    mut camera_query: Query<&mut OrthographicProjection, With<KotoCamera>>,
-) {
-    let mut camera = camera_query.single_mut();
-    for event in window_resized_events.read() {
-        camera.scaling_mode = get_scaling_mode(event.width, event.height);
+    mut camera_query: Query<&mut Projection, With<KotoCamera>>,
+) -> Result {
+    match camera_query.single_mut()?.as_mut() {
+        Projection::Orthographic(projection) => {
+            for event in window_resized_events.read() {
+                projection.scaling_mode = get_scaling_mode(event.width, event.height);
+            }
+        }
+        _ => return Err("Expected an orthographic projection".into()),
     }
+
+    Ok(())
 }
 
 fn get_scaling_mode(width: f32, height: f32) -> ScalingMode {

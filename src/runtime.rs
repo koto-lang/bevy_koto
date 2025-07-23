@@ -11,7 +11,7 @@ use bevy::{
     reflect::TypePath,
 };
 use cloned::cloned;
-use koto::prelude::*;
+use koto::{derive::*, prelude::*};
 use std::{
     path::{Path, PathBuf},
     str,
@@ -50,6 +50,7 @@ pub enum KotoUpdate {
 /// The following events are also added by the plugin:
 /// - [LoadScript]: Sent to load a new script
 /// - [ScriptLoaded]: Sent after a script has been successfully loaded and initialized.
+#[derive(Default)]
 pub struct KotoRuntimePlugin;
 
 impl Plugin for KotoRuntimePlugin {
@@ -73,15 +74,24 @@ impl Plugin for KotoRuntimePlugin {
         let (add_dependency_sender, add_dependency_receiver) = koto_channel::<AddDependency>();
         let koto_runtime = KotoRuntime::new(add_dependency_sender.clone());
 
-        // Hack to get the root path of the assets folder,
-        // see https://github.com/bevyengine/bevy/issues/10455
-        let assets_folder_path = FileAssetReader::get_base_path().join("assets");
+        let mut assets_path = FileAssetReader::get_base_path();
+        let assets_folder_name = {
+            let asset_plugins = app.get_added_plugins::<AssetPlugin>();
+            let Some(assets_plugin) = asset_plugins.last() else {
+                error!("AssetPlugin must be initialized before KotoRuntimePlugin");
+                return;
+            };
+            PathBuf::from(&assets_plugin.file_path)
+        };
+        assets_path.push(assets_folder_name);
+        debug!("Assets path: {}", assets_path.to_string_lossy());
 
         app.insert_resource(koto_runtime)
             .insert_resource(add_dependency_sender)
             .insert_resource(add_dependency_receiver)
             .insert_resource(ActiveScript::default())
-            .insert_resource(AssetsFolderPath(assets_folder_path))
+            .insert_resource(AssetsRootPath(assets_path))
+            .insert_resource(KotoTime::default())
             .add_event::<LoadScript>()
             .add_event::<ScriptLoaded>()
             .init_asset::<KotoScript>()
@@ -91,6 +101,8 @@ impl Plugin for KotoRuntimePlugin {
                 (
                     // Compile the script if necessary
                     process_load_script_events.in_set(KotoUpdate::Compile),
+                    // Update the script timer
+                    update_script_timer.in_set(KotoUpdate::PreUpdate),
                     // Run the script's update function
                     run_script_update.in_set(KotoUpdate::Update),
                     // Post update tasks
@@ -123,19 +135,20 @@ fn process_script_asset_events(
                     .iter()
                     .any(|handle| id == handle.id())
             {
-                load_script.send(LoadScript::reload(script.clone()));
+                load_script.write(LoadScript::reload(script.clone()));
             }
         }
     }
 }
 
 fn process_load_script_events(
-    assets_folder: Res<AssetsFolderPath>,
+    assets_root_path: Res<AssetsRootPath>,
     assets: Res<Assets<KotoScript>>,
     mut load_script_events: EventReader<LoadScript>,
     mut script_loaded: EventWriter<ScriptLoaded>,
     mut koto: ResMut<KotoRuntime>,
     mut active_script: ResMut<ActiveScript>,
+    mut koto_timer: ResMut<KotoTime>,
 ) {
     for event in load_script_events.read() {
         let Some(script) = assets.get(event.script.id()) else {
@@ -145,13 +158,14 @@ fn process_load_script_events(
 
         info!("Loading {}", script.path.to_string_lossy());
 
-        let script_path = assets_folder.0.join(&script.path);
+        let script_path = assets_root_path.0.join(&script.path);
         if koto
-            .initialize_script(&script.script, Some(&script_path), event.call_setup)
+            .initialize_script(&script.script, Some(&script_path), event.reset)
             .is_ok()
         {
-            if event.call_setup {
-                script_loaded.send_default();
+            if event.reset {
+                koto_timer.reset();
+                script_loaded.write_default();
             }
 
             active_script.script = Some(event.script.clone());
@@ -160,11 +174,40 @@ fn process_load_script_events(
     }
 }
 
+fn update_script_timer(time: Res<Time<Virtual>>, mut script_time: ResMut<KotoTime>) {
+    script_time.update(&time);
+}
+
+fn run_script_update(mut koto: ResMut<KotoRuntime>, time: Res<KotoTime>) {
+    if koto.is_ready {
+        koto.run_update(&time);
+    }
+}
+
+fn add_script_dependencies(
+    assets_root_path: Res<AssetsRootPath>,
+    asset_server: Res<AssetServer>,
+    channel: Res<KotoReceiver<AddDependency>>,
+    mut active_script: ResMut<ActiveScript>,
+) {
+    while let Some(dependency) = channel.receive() {
+        if let Ok(path_in_assets) = dependency.0.strip_prefix(&assets_root_path.0) {
+            let handle = asset_server.load(path_in_assets.to_owned());
+            active_script.dependencies.push(handle);
+        } else {
+            error!(
+                "Unable to find path in assets for {}",
+                dependency.0.to_string_lossy()
+            );
+        }
+    }
+}
+
 /// Sending this event will load the provided script into the runtime
 #[derive(Event, Default)]
 pub struct LoadScript {
     script: Handle<KotoScript>,
-    call_setup: bool, // false for a hot-reload
+    reset: bool, // Should be true when a script is first loaded, and false for reloads
 }
 
 impl LoadScript {
@@ -172,7 +215,7 @@ impl LoadScript {
     pub fn load(script: Handle<KotoScript>) -> Self {
         Self {
             script,
-            call_setup: true,
+            reset: true,
         }
     }
 
@@ -180,7 +223,7 @@ impl LoadScript {
     pub fn reload(script: Handle<KotoScript>) -> Self {
         Self {
             script,
-            call_setup: false,
+            reset: false,
         }
     }
 }
@@ -191,31 +234,6 @@ impl LoadScript {
 /// (i.e. when LoadScript::call_setup is false).
 #[derive(Event, Default)]
 pub struct ScriptLoaded;
-
-fn run_script_update(mut koto: ResMut<KotoRuntime>, time: Res<Time>) {
-    if koto.is_ready {
-        koto.run_update(time.delta_secs_f64());
-    }
-}
-
-fn add_script_dependencies(
-    assets_folder_path: Res<AssetsFolderPath>,
-    asset_server: Res<AssetServer>,
-    channel: Res<KotoReceiver<AddDependency>>,
-    mut active_script: ResMut<ActiveScript>,
-) {
-    while let Some(dependency) = channel.receive() {
-        if let Ok(path_in_assets) = dependency.0.strip_prefix(&assets_folder_path.0) {
-            let handle = asset_server.load(path_in_assets.to_owned());
-            active_script.dependencies.push(handle);
-        } else {
-            error!(
-                "Unable to find path in assets folder for {}",
-                dependency.0.to_string_lossy()
-            );
-        }
-    }
-}
 
 /// A Koto script as read from the assets folder
 #[derive(Asset, TypePath, Debug)]
@@ -237,7 +255,7 @@ struct ActiveScript {
 }
 
 #[derive(Default, Resource)]
-struct AssetsFolderPath(PathBuf);
+struct AssetsRootPath(PathBuf);
 
 #[derive(Debug, thiserror::Error)]
 enum KotoScriptAssetLoaderError {
@@ -276,11 +294,17 @@ impl AssetLoader for KotoScriptAssetLoader {
 }
 
 /// The Koto runtime
-#[derive(Default, Resource)]
+#[derive(Resource)]
 pub struct KotoRuntime {
     runtime: Koto,
     user_data: KValue,
     is_ready: bool,
+    // The time value that gets passed into script update functions
+    //
+    // The time gets reset to zero when a script is first loaded.
+    //
+    // See [KotoTimeObject].
+    time: KObject,
 }
 
 impl KotoRuntime {
@@ -300,6 +324,7 @@ impl KotoRuntime {
             runtime,
             user_data: KValue::Null,
             is_ready: false,
+            time: KObject::from(KotoTimeObject::default()),
         }
     }
 
@@ -326,16 +351,19 @@ impl KotoRuntime {
                 .map(|path| KString::from(path)),
             compiler_settings: default(),
         };
-        if let Err(error) = self.runtime.compile(compile_args) {
-            error!("Error while compiling script:\n{error}");
-            return Err(());
-        }
+        let chunk = match self.runtime.compile(compile_args) {
+            Ok(chunk) => chunk,
+            Err(error) => {
+                error!("Error while compiling script:\n{error}");
+                return Err(());
+            }
+        };
 
         if call_setup {
             self.runtime.exports_mut().clear();
         }
 
-        if let Err(e) = self.runtime.run() {
+        if let Err(e) = self.runtime.run(chunk) {
             error!("Error while running Koto script:\n{e}");
             return Err(());
         }
@@ -368,14 +396,21 @@ impl KotoRuntime {
         Ok(())
     }
 
-    fn run_update(&mut self, time_delta: f64) {
+    fn run_update(&mut self, script_time: &KotoTime) {
         debug_assert!(self.is_ready);
 
         let now = std::time::Instant::now();
 
-        if let Err(e) =
-            self.run_exported_function("update", &[self.user_data.clone(), time_delta.into()])
         {
+            let mut time_object = self.time.cast_mut::<KotoTimeObject>().unwrap();
+            time_object.elapsed = script_time.current_time();
+            time_object.delta = script_time.delta();
+        }
+
+        if let Err(e) = self.run_exported_function(
+            "update",
+            &[self.user_data.clone(), self.time.clone().into()],
+        ) {
             error!("Error in 'update':\n{e}");
             return;
         }
@@ -389,7 +424,7 @@ impl KotoRuntime {
         function_name: &str,
         args: &[KValue],
     ) -> Result<Option<KValue>, koto::Error> {
-        let Some(function) = self.runtime.exports().data().get(function_name).cloned() else {
+        let Some(function) = self.runtime.exports().get(function_name) else {
             return Ok(None);
         };
 
@@ -457,3 +492,73 @@ impl<T> KotoReceiver<T> {
 
 #[derive(Clone, Debug)]
 struct AddDependency(PathBuf);
+
+/// A timer that tracks the amount of elapsed time since the script was loaded
+///
+/// This tracks virtual time (updated in KotoUpdate::PreUpdate) and is the source
+/// of the time value passed into script update functions.
+#[derive(Default, Resource)]
+pub struct KotoTime {
+    timer: Timer,
+    delta: f64,
+}
+
+impl KotoTime {
+    fn update(&mut self, time: &Time<Virtual>) {
+        self.delta = time.delta_secs_f64();
+        self.advance(self.delta);
+    }
+
+    /// The overall elapsed time
+    pub fn current_time(&self) -> f64 {
+        self.timer.elapsed_secs_f64()
+    }
+
+    /// The time delta since the previous update
+    ///
+    /// This is zero when time has been skipped.
+    pub fn delta(&self) -> f64 {
+        self.timer.elapsed_secs_f64()
+    }
+
+    /// Resets the current time to zero
+    pub fn reset(&mut self) {
+        self.set_current_time(0.0);
+    }
+
+    /// Sets the current time
+    pub fn set_current_time(&mut self, secs: f64) {
+        self.timer.set_elapsed(Duration::from_secs_f64(secs));
+        self.delta = 0.0;
+    }
+
+    /// Advances the current time by the provided number of seconds
+    ///
+    /// `secs` can be negative, with the resulting current time clamped to zero.
+    pub fn advance(&mut self, secs: f64) {
+        self.set_current_time((self.current_time() + secs).max(0.0));
+    }
+}
+
+// The time interface passed into Koto scripts, synchronized to the [KotoTime] resource
+#[derive(Clone, Default, Resource, KotoType, KotoCopy)]
+#[koto(type_name = "Time")]
+struct KotoTimeObject {
+    elapsed: f64,
+    delta: f64,
+}
+
+impl KotoObject for KotoTimeObject {}
+
+#[koto_impl]
+impl KotoTimeObject {
+    #[koto_method]
+    fn elapsed(&self) -> KValue {
+        self.elapsed.into()
+    }
+
+    #[koto_method]
+    fn delta(&self) -> KValue {
+        self.delta.into()
+    }
+}

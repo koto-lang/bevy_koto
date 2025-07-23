@@ -10,10 +10,10 @@ from utils import palette
 from utils.math import lerp
 
 palette = palette.make_palette
-  (rgb 0.99, 0.95, 0.31),
-  (rgb 0.59, 0.05, 0.91),
-  (rgb 0.39, 0.95, 0.31),
-  (rgb 0.19, 0.29, 0.99),
+  rgb(0.99, 0.95, 0.31),
+  rgb(0.59, 0.05, 0.91),
+  rgb(0.39, 0.95, 0.31),
+  rgb(0.19, 0.29, 0.99)
 
 background_color = hsv 100, 0.1, 0.8
 
@@ -37,9 +37,10 @@ random_color = |time|
 
 spawn_rect = |time, id|
   position =
-    vec2 (random_lerp -screen_bound, screen_bound), (random_lerp -screen_bound, screen_bound)
+    vec2 random_lerp(-screen_bound, screen_bound), random_lerp(-screen_bound, screen_bound)
+
   velocity =
-    vec2 (random_lerp -speed_max, speed_max), (random_lerp -speed_max, speed_max)
+    vec2 random_lerp(-speed_max, speed_max), random_lerp(-speed_max, speed_max)
   shape_size = random_lerp 0.2, 0.6
   color = (random_color time).set_alpha 0
   target_alpha = random_lerp alpha_min, alpha_max
@@ -78,8 +79,8 @@ export
     # state.rects = []
     set_clear_color background_color
 
-  update: |state, time_delta|
-    state.time += time_delta
+  update: |state, time|
+    state.time = time.elapsed()
     # Remove rects that have gone out of bounds
     state.rects.retain |rect| rect.state().is_active
     # Make new rects to replace ones that have been removed

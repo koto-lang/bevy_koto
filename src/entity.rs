@@ -10,6 +10,7 @@ use std::sync::Arc;
 ///
 /// Entities with the [KotoEntity] component will be automatically despawned when the script no
 /// longer refers to them.
+#[derive(Default)]
 pub struct KotoEntityPlugin;
 
 impl Plugin for KotoEntityPlugin {

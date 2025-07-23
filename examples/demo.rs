@@ -1,10 +1,7 @@
 use std::path::Path;
 
 use anyhow::Result;
-use bevy::{
-    asset::LoadedFolder, diagnostic::FrameTimeDiagnosticsPlugin, ecs::schedule::ExecutorKind,
-    prelude::*,
-};
+use bevy::{asset::LoadedFolder, diagnostic::FrameTimeDiagnosticsPlugin, prelude::*};
 use bevy_koto::prelude::*;
 use clap::Parser;
 
@@ -37,10 +34,6 @@ Press R to reload the current script.
     );
 
     App::new()
-        .edit_schedule(Main, |schedule| {
-            schedule.set_executor_kind(ExecutorKind::MultiThreaded);
-        })
-        // .insert_resource(KotoScriptFolder::new(&assets_dir, Some(&args.script)))
         .add_plugins((
             DefaultPlugins
                 .set(WindowPlugin {
@@ -55,18 +48,8 @@ Press R to reload the current script.
                     watch_for_changes_override: Some(true),
                     ..Default::default()
                 }),
-            FrameTimeDiagnosticsPlugin,
-        ))
-        .add_plugins((
-            KotoRuntimePlugin,
-            KotoEntityPlugin,
-            KotoCameraPlugin,
-            KotoWindowPlugin,
-            KotoColorPlugin,
-            KotoGeometryPlugin,
-            KotoRandomPlugin,
-            KotoShapePlugin,
-            KotoTextPlugin,
+            FrameTimeDiagnosticsPlugin::default(),
+            KotoPlugins,
         ))
         .init_state::<AppState>()
         .add_systems(OnEnter(AppState::Setup), setup)
@@ -77,6 +60,8 @@ Press R to reload the current script.
         .add_systems(OnEnter(AppState::Ready), ready)
         .add_systems(Update, process_keypresses.run_if(in_state(AppState::Ready)))
         .run();
+
+    println!("Exiting");
 
     Ok(())
 }
@@ -155,6 +140,7 @@ fn process_keypresses(
     input: Res<ButtonInput<KeyCode>>,
     mut load_script_events: EventWriter<LoadScript>,
     mut script_loader: ResMut<ScriptLoader>,
+    mut time: ResMut<Time<Virtual>>,
 ) {
     if input.just_pressed(KeyCode::Tab) {
         if input.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight]) {
@@ -164,6 +150,12 @@ fn process_keypresses(
         }
     } else if input.just_pressed(KeyCode::KeyR) {
         script_loader.reload_script(&mut load_script_events);
+    } else if input.just_pressed(KeyCode::Space) {
+        if time.is_paused() {
+            time.unpause();
+        } else {
+            time.pause();
+        }
     }
 }
 
@@ -201,7 +193,7 @@ impl ScriptLoader {
 
     fn load_script(&mut self, index: usize, load_script_events: &mut EventWriter<LoadScript>) {
         if let Some(script) = self.scripts.get(index) {
-            load_script_events.send(LoadScript::load(script.clone()));
+            load_script_events.write(LoadScript::load(script.clone()));
             self.current_script = Some(index);
         }
     }

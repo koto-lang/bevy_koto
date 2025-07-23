@@ -4,27 +4,27 @@ from number import pi_4
 
 export
   on_load: |data|
-    data.shapes =
-      ( shape.square()
-          .set_position 0.5, 0.5
-          .set_color 1.0, 0.0, 0.0
-          .set_image 'images/sunset.png'
-      , shape.square()
-          .set_position 0.5, -0.5
-          .set_color 0.0, 1.0, 0.0
-          .set_image 'images/sunset.png'
-      , shape.square()
-          .set_position -0.5, -0.5
-          .set_color 0.0, 0.0, 1.0
-          .set_image 'images/sunset.png'
-      , shape.square()
-          .set_position -0.5, 0.5
-          .set_color 1.0, 1.0, 0.0
-          .set_image 'images/sunset.png'
-      , shape.square()
-          .set_position 0, 0, 1
-          .set_size 2.sqrt()
-          .set_rotation pi_4
-          .set_color 1.0, 1.0, 1.0
-          .set_alpha 0.3
-      )
+    top_left = shape.square()
+      .set_position 0.5, 0.5
+      .set_color 1.0, 0.0, 0.0
+      .set_image 'images/sunset.png'
+    top_right = shape.square()
+      .set_position 0.5, -0.5
+      .set_color 0.0, 1.0, 0.0
+      .set_image 'images/sunset.png'
+    bottom_left = shape.square()
+      .set_position -0.5, -0.5
+      .set_color 0.0, 0.0, 1.0
+      .set_image 'images/sunset.png'
+    bottom_right = shape.square()
+      .set_position -0.5, 0.5
+      .set_color 1.0, 1.0, 0.0
+      .set_image 'images/sunset.png'
+    diamond = shape.square()
+      .set_position 0, 0, 1
+      .set_size 2.sqrt()
+      .set_rotation pi_4
+      .set_color 1.0, 1.0, 1.0
+      .set_alpha 0.3
+
+    data.shapes = top_left, top_right, bottom_left, bottom_right, diamond

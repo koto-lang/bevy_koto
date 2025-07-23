@@ -10,6 +10,7 @@ use bevy::{
 ///
 /// The plugin currently only detects window resize events, and then calls the script's
 /// exported `on_window_size` function (if it exists).
+#[derive(Default)]
 pub struct KotoWindowPlugin;
 
 impl Plugin for KotoWindowPlugin {
@@ -29,7 +30,7 @@ fn on_script_compiled(
     primary_window: Query<&Window, With<PrimaryWindow>>,
 ) {
     for _ in script_loaded_events.read() {
-        if let Ok(window) = primary_window.get_single() {
+        if let Ok(window) = primary_window.single() {
             run_on_window_size(&mut koto, window.width(), window.height());
         } else {
             error!("Missing primary window");

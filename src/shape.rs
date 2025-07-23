@@ -9,6 +9,7 @@ use koto::{derive::*, prelude::*, runtime::Result as KotoResult};
 ///
 /// The plugin adds a `shape` module to the Koto prelude.
 /// The currently available shapes are `circle`, `square`, and `polygon`.
+#[derive(Default)]
 pub struct KotoShapePlugin;
 
 impl Plugin for KotoShapePlugin {
@@ -109,6 +110,7 @@ fn spawn_shapes(
                 MeshMaterial2d(materials.add(ColorMaterial {
                     color: Color::WHITE,
                     alpha_mode: bevy::sprite::AlphaMode2d::Blend,
+                    uv_transform: default(),
                     texture: None,
                 })),
                 RenderLayers::layer(0),

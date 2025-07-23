@@ -6,6 +6,7 @@ use bevy::prelude::*;
 /// Random number utilities for Koto
 ///
 /// The plugin adds the `random` module from `koto_random` to Koto's prelude.
+#[derive(Default)]
 pub struct KotoRandomPlugin;
 
 impl Plugin for KotoRandomPlugin {

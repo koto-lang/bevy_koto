@@ -5,6 +5,7 @@
 #![warn(missing_docs)]
 
 pub mod entity;
+pub mod koto_plugins;
 pub mod prelude;
 pub mod runtime;
 
