@@ -35,6 +35,7 @@ discussions, or the [Koto discord][discord].
 
 | `bevy_koto` | `bevy`  | `koto`  |
 | ----------- | ------- | ------- |
+| `v0.3`      | `v0.16` | `v0.16` |
 | `v0.2`      | `v0.14` | `v0.14` |
 | `v0.1`      | `v0.13` | `v0.14` |
 
