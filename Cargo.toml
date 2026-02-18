@@ -32,17 +32,22 @@ parking_lot = "0.12"
 # derive(Error)
 thiserror = "1"
 
-koto = { version = "0.16", default-features = false, features = [
-  "arc",
-] }
+koto = { version = "0.16", default-features = false, features = ["arc"] }
 koto_color = { version = "0.16", default-features = false, optional = true }
 koto_geometry = { version = "0.16", default-features = false, optional = true }
 koto_random = { version = "0.16", default-features = false, optional = true }
 
 [dependencies.bevy]
-version = "0.16"
+version = "0.18"
 default-features = false
-features = ["bevy_asset", "bevy_core_pipeline", "bevy_log", "bevy_window"]
+features = [
+  "2d_bevy_render",
+  "bevy_asset",
+  "bevy_color",
+  "bevy_core_pipeline",
+  "bevy_log",
+  "bevy_window",
+]
 
 [dev-dependencies]
 # Flexible concrete Error type built on std::error::Error
@@ -51,24 +56,13 @@ anyhow = "1.0.82"
 clap = { version = "4.5.4", features = ["derive"] }
 
 [dev-dependencies.bevy]
-version = "0.16"
+version = "0.18"
 default-features = false
 features = [
+  "2d",
   "bevy_asset",
-  "bevy_core_pipeline",
-  "bevy_dev_tools",
-  "bevy_gilrs",
-  "bevy_render",
-  "bevy_sprite",
-  "bevy_state",
-  "bevy_text",
-  "bevy_ui",
-  "bevy_window",
-  "bevy_winit",
-  "default_font",
-  "png",
-  "x11",
   "file_watcher",
   "multi_threaded",
   "tonemapping_luts",
+  "zstd_rust",
 ]

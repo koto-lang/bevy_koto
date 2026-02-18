@@ -92,8 +92,8 @@ impl Plugin for KotoRuntimePlugin {
             .insert_resource(ActiveScript::default())
             .insert_resource(AssetsRootPath(assets_path))
             .insert_resource(KotoTime::default())
-            .add_event::<LoadScript>()
-            .add_event::<ScriptLoaded>()
+            .add_message::<LoadScript>()
+            .add_message::<ScriptLoaded>()
             .init_asset::<KotoScript>()
             .register_asset_loader(KotoScriptAssetLoader)
             .add_systems(
@@ -118,12 +118,12 @@ impl Plugin for KotoRuntimePlugin {
 
 fn process_script_asset_events(
     active_script: Res<ActiveScript>,
-    mut asset_events: EventReader<AssetEvent<KotoScript>>,
-    mut load_script: EventWriter<LoadScript>,
+    mut asset_messages: MessageReader<AssetEvent<KotoScript>>,
+    mut load_script: MessageWriter<LoadScript>,
 ) {
     if let Some(script) = &active_script.script {
-        for event in asset_events.read() {
-            let id = match event {
+        for message in asset_messages.read() {
+            let id = match message {
                 AssetEvent::Added { id } => *id,
                 AssetEvent::Modified { id } => *id,
                 _ => continue,
@@ -144,15 +144,15 @@ fn process_script_asset_events(
 fn process_load_script_events(
     assets_root_path: Res<AssetsRootPath>,
     assets: Res<Assets<KotoScript>>,
-    mut load_script_events: EventReader<LoadScript>,
-    mut script_loaded: EventWriter<ScriptLoaded>,
+    mut load_script_messages: MessageReader<LoadScript>,
+    mut script_loaded: MessageWriter<ScriptLoaded>,
     mut koto: ResMut<KotoRuntime>,
     mut active_script: ResMut<ActiveScript>,
     mut koto_timer: ResMut<KotoTime>,
 ) {
-    for event in load_script_events.read() {
-        let Some(script) = assets.get(event.script.id()) else {
-            error!("Unable to load script (id: {})", event.script.id());
+    for message in load_script_messages.read() {
+        let Some(script) = assets.get(message.script.id()) else {
+            error!("Unable to load script (id: {})", message.script.id());
             continue;
         };
 
@@ -160,15 +160,15 @@ fn process_load_script_events(
 
         let script_path = assets_root_path.0.join(&script.path);
         if koto
-            .initialize_script(&script.script, Some(&script_path), event.reset)
+            .initialize_script(&script.script, Some(&script_path), message.reset)
             .is_ok()
         {
-            if event.reset {
+            if message.reset {
                 koto_timer.reset();
                 script_loaded.write_default();
             }
 
-            active_script.script = Some(event.script.clone());
+            active_script.script = Some(message.script.clone());
             active_script.dependencies.clear();
         }
     }
@@ -203,8 +203,8 @@ fn add_script_dependencies(
     }
 }
 
-/// Sending this event will load the provided script into the runtime
-#[derive(Event, Default)]
+/// Sending this message will load the provided script into the runtime
+#[derive(Message, Default)]
 pub struct LoadScript {
     script: Handle<KotoScript>,
     reset: bool, // Should be true when a script is first loaded, and false for reloads
@@ -230,9 +230,9 @@ impl LoadScript {
 
 /// Sent when a script has been successfully compiled and initialized
 ///
-/// An event isn't sent when a script has been reloaded while running
+/// A message isn't sent when a script has been reloaded while running
 /// (i.e. when LoadScript::call_setup is false).
-#[derive(Event, Default)]
+#[derive(Message, Default)]
 pub struct ScriptLoaded;
 
 /// A Koto script as read from the assets folder
@@ -265,7 +265,7 @@ enum KotoScriptAssetLoaderError {
     Utf8(#[from] std::str::Utf8Error),
 }
 
-#[derive(Default)]
+#[derive(Default, TypePath)]
 struct KotoScriptAssetLoader;
 
 impl AssetLoader for KotoScriptAssetLoader {
@@ -284,7 +284,7 @@ impl AssetLoader for KotoScriptAssetLoader {
         let script = str::from_utf8(&bytes)?.to_string();
         Ok(KotoScript {
             script,
-            path: load_context.path().into(),
+            path: load_context.path().path().into(),
         })
     }
 

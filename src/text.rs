@@ -77,7 +77,7 @@ fn spawn_text(channel: Res<KotoReceiver<SpawnText>>, mut commands: Commands) {
             .spawn((
                 Text2d::new(text),
                 TextFont::from_font_size(100.0),
-                TextLayout::new_with_justify(JustifyText::Center),
+                TextLayout::new_with_justify(Justify::Center),
                 koto_entity.clone(),
             ))
             .id();

@@ -26,10 +26,10 @@ impl Plugin for KotoWindowPlugin {
 
 fn on_script_compiled(
     mut koto: ResMut<KotoRuntime>,
-    mut script_loaded_events: EventReader<ScriptLoaded>,
+    mut script_loaded_messages: MessageReader<ScriptLoaded>,
     primary_window: Query<&Window, With<PrimaryWindow>>,
 ) {
-    for _ in script_loaded_events.read() {
+    for _ in script_loaded_messages.read() {
         if let Ok(window) = primary_window.single() {
             run_on_window_size(&mut koto, window.width(), window.height());
         } else {
@@ -40,10 +40,10 @@ fn on_script_compiled(
 
 fn on_window_resized(
     mut koto: ResMut<KotoRuntime>,
-    mut window_resized_events: EventReader<WindowResized>,
+    mut window_resized_messages: MessageReader<WindowResized>,
 ) {
-    for event in window_resized_events.read() {
-        run_on_window_size(&mut koto, event.width, event.height);
+    for message in window_resized_messages.read() {
+        run_on_window_size(&mut koto, message.width, message.height);
     }
 }
 

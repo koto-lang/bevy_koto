@@ -35,10 +35,10 @@ impl Plugin for KotoEntityPlugin {
 
 fn on_script_loaded(
     mut entities: Query<&mut KotoEntity>,
-    mut script_loaded_events: EventReader<ScriptLoaded>,
+    mut script_loaded_messages: MessageReader<ScriptLoaded>,
 ) {
     let mut clear_entities = false;
-    for _ in script_loaded_events.read() {
+    for _ in script_loaded_messages.read() {
         clear_entities = true;
     }
     if clear_entities {

@@ -1,7 +1,7 @@
 //! Support for modifying properties of a Bevy camera
 
 use crate::prelude::*;
-use bevy::{prelude::*, render::camera::ScalingMode, window::WindowResized};
+use bevy::{camera::ScalingMode, prelude::*, window::WindowResized};
 use cloned::cloned;
 use koto::prelude::*;
 
@@ -55,10 +55,10 @@ fn on_startup(
 
 // Reset the camera's projection when a script is loaded
 fn on_script_loaded(
-    mut script_loaded_events: EventReader<ScriptLoaded>,
+    mut script_loaded_messages: MessageReader<ScriptLoaded>,
     mut camera_query: Query<&mut Projection, With<KotoCamera>>,
 ) -> Result {
-    for _ in script_loaded_events.read() {
+    for _ in script_loaded_messages.read() {
         match camera_query.single_mut()?.as_mut() {
             Projection::Orthographic(projection) => projection.scale = 1.0,
             _ => return Err("Expected an orthographic projection".into()),
@@ -87,12 +87,12 @@ fn update_projection(
 }
 
 fn on_window_resized(
-    mut window_resized_events: EventReader<WindowResized>,
+    mut window_resized_messages: MessageReader<WindowResized>,
     mut camera_query: Query<&mut Projection, With<KotoCamera>>,
 ) -> Result {
     match camera_query.single_mut()?.as_mut() {
         Projection::Orthographic(projection) => {
-            for event in window_resized_events.read() {
+            for event in window_resized_messages.read() {
                 projection.scaling_mode = get_scaling_mode(event.width, event.height);
             }
         }

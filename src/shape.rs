@@ -1,7 +1,7 @@
 //! Support for adding and updating 2D shapes in Koto scripts
 
 use crate::prelude::*;
-use bevy::{prelude::*, render::view::RenderLayers};
+use bevy::{camera::visibility::RenderLayers, prelude::*, sprite_render::AlphaMode2d};
 use cloned::cloned;
 use koto::{derive::*, prelude::*, runtime::Result as KotoResult};
 
@@ -109,7 +109,7 @@ fn spawn_shapes(
                 Mesh2d(meshes.add(mesh)),
                 MeshMaterial2d(materials.add(ColorMaterial {
                     color: Color::WHITE,
-                    alpha_mode: bevy::sprite::AlphaMode2d::Blend,
+                    alpha_mode: AlphaMode2d::Blend,
                     uv_transform: default(),
                     texture: None,
                 })),

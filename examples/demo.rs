@@ -39,7 +39,7 @@ Press R to reload the current script.
                 .set(WindowPlugin {
                     primary_window: Some(Window {
                         title: "bevy_koto".into(),
-                        resolution: (args.width as f32, args.height as f32).into(),
+                        resolution: (args.width, args.height).into(),
                         ..Default::default()
                     }),
                     ..Default::default()
@@ -55,7 +55,7 @@ Press R to reload the current script.
         .add_systems(OnEnter(AppState::Setup), setup)
         .add_systems(
             Update,
-            check_script_events.run_if(in_state(AppState::Setup)),
+            check_script_messages.run_if(in_state(AppState::Setup)),
         )
         .add_systems(OnEnter(AppState::Ready), ready)
         .add_systems(Update, process_keypresses.run_if(in_state(AppState::Ready)))
@@ -82,13 +82,13 @@ fn setup(asset_server: Res<AssetServer>, mut commands: Commands) {
     });
 }
 
-fn check_script_events(
+fn check_script_messages(
     mut next_state: ResMut<NextState<AppState>>,
     script_loader: Res<ScriptLoader>,
-    mut events: EventReader<AssetEvent<LoadedFolder>>,
+    mut messages: MessageReader<AssetEvent<LoadedFolder>>,
 ) {
-    for event in events.read() {
-        if event.is_loaded_with_dependencies(&script_loader.script_folder) {
+    for message in messages.read() {
+        if message.is_loaded_with_dependencies(&script_loader.script_folder) {
             next_state.set(AppState::Ready);
         }
     }
@@ -98,7 +98,7 @@ fn ready(
     loaded_folders: Res<Assets<LoadedFolder>>,
     mut script_loader: ResMut<ScriptLoader>,
     mut scripts: ResMut<Assets<KotoScript>>,
-    mut load_script: EventWriter<LoadScript>,
+    mut load_script: MessageWriter<LoadScript>,
 ) {
     let script_folder = loaded_folders
         .get(&script_loader.script_folder)
@@ -138,18 +138,18 @@ fn ready(
 
 fn process_keypresses(
     input: Res<ButtonInput<KeyCode>>,
-    mut load_script_events: EventWriter<LoadScript>,
+    mut load_script_messages: MessageWriter<LoadScript>,
     mut script_loader: ResMut<ScriptLoader>,
     mut time: ResMut<Time<Virtual>>,
 ) {
     if input.just_pressed(KeyCode::Tab) {
         if input.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight]) {
-            script_loader.previous_script(&mut load_script_events);
+            script_loader.previous_script(&mut load_script_messages);
         } else {
-            script_loader.next_script(&mut load_script_events);
+            script_loader.next_script(&mut load_script_messages);
         }
     } else if input.just_pressed(KeyCode::KeyR) {
-        script_loader.reload_script(&mut load_script_events);
+        script_loader.reload_script(&mut load_script_messages);
     } else if input.just_pressed(KeyCode::Space) {
         if time.is_paused() {
             time.unpause();
@@ -167,14 +167,14 @@ struct ScriptLoader {
 }
 
 impl ScriptLoader {
-    fn next_script(&mut self, load_script_events: &mut EventWriter<LoadScript>) {
+    fn next_script(&mut self, load_script_messages: &mut MessageWriter<LoadScript>) {
         let next_index = self
             .current_script
             .map_or(0, |index| (index + 1) % self.scripts.len());
-        self.load_script(next_index, load_script_events);
+        self.load_script(next_index, load_script_messages);
     }
 
-    fn previous_script(&mut self, load_script_events: &mut EventWriter<LoadScript>) {
+    fn previous_script(&mut self, load_script_messages: &mut MessageWriter<LoadScript>) {
         let previous_index = self.current_script.map_or(0, |index| {
             if index > 0 {
                 index - 1
@@ -182,18 +182,18 @@ impl ScriptLoader {
                 self.scripts.len().saturating_sub(1)
             }
         });
-        self.load_script(previous_index, load_script_events);
+        self.load_script(previous_index, load_script_messages);
     }
 
-    fn reload_script(&mut self, load_script_events: &mut EventWriter<LoadScript>) {
+    fn reload_script(&mut self, load_script_messages: &mut MessageWriter<LoadScript>) {
         if let Some(index) = self.current_script {
-            self.load_script(index, load_script_events);
+            self.load_script(index, load_script_messages);
         }
     }
 
-    fn load_script(&mut self, index: usize, load_script_events: &mut EventWriter<LoadScript>) {
+    fn load_script(&mut self, index: usize, load_script_messages: &mut MessageWriter<LoadScript>) {
         if let Some(script) = self.scripts.get(index) {
-            load_script_events.write(LoadScript::load(script.clone()));
+            load_script_messages.write(LoadScript::load(script.clone()));
             self.current_script = Some(index);
         }
     }

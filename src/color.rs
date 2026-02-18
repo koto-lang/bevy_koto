@@ -26,7 +26,7 @@ impl Plugin for KotoColorPlugin {
             .insert_resource(set_clear_color_receiver)
             .insert_resource(update_color_sender)
             .insert_resource(update_color_receiver)
-            .add_event::<SetClearColor>()
+            .add_message::<SetClearColor>()
             .add_systems(Startup, on_startup)
             .add_systems(KotoSchedule, on_script_loaded.in_set(KotoUpdate::PreUpdate))
             .add_systems(
@@ -68,10 +68,10 @@ fn on_startup(koto: Res<KotoRuntime>, set_clear_color: Res<KotoSender<SetClearCo
 
 // Reset the clear color when a script is loaded
 fn on_script_loaded(
-    mut script_loaded_events: EventReader<ScriptLoaded>,
+    mut script_loaded_messages: MessageReader<ScriptLoaded>,
     mut clear_color: ResMut<ClearColor>,
 ) {
-    for _ in script_loaded_events.read() {
+    for _ in script_loaded_messages.read() {
         clear_color.0 = Color::BLACK;
     }
 }
@@ -83,7 +83,7 @@ fn set_clear_color(channel: Res<KotoReceiver<SetClearColor>>, mut clear_color: R
 }
 
 /// Event sent to set the value of the ClearColor resource
-#[derive(Clone, Event)]
+#[derive(Clone, Message)]
 pub struct SetClearColor(Color);
 
 /// A function that converts a Koto color into a Bevy color
